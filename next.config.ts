@@ -1,14 +1,13 @@
-import type { NextConfig } from "next";
-import path from "path";
+import { NextRequest, NextResponse } from "next/server";
 
-const nextConfig: NextConfig = {
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-  webpack: (config) => {
-    config.resolve.alias["@"] = path.resolve(__dirname, "src");
-    return config;
-  },
-};
+export async function GET(
+  req: NextRequest,
+  context: { params: { slug: string[] } }
+) {
+  const { slug } = context.params;
 
-export default nextConfig;
+  return NextResponse.json({
+    message: "Proxy route working",
+    slug,
+  });
+}
