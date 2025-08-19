@@ -1,20 +1,13 @@
 export async function registerOrderPaidWebhook(shop: string, accessToken: string) {
-  const endpoint = `https://${shop}/admin/api/2025-01/graphql.json`;
+  const endpoint = `https://${shop}/admin/api/2025-01/webhooks.json`;
 
-  const query = `
-    mutation {
-      webhookSubscriptionCreate(
-        topic: ORDERS_UPDATED,
-        webhookSubscription: {
-          callbackUrl: "${process.env.SHOPIFY_APP_URL}/api/webhooks/orders/paid"
-          format: JSON
-        }
-      ) {
-        userErrors { field message }
-        webhookSubscription { id }
-      }
-    }
-  `;
+  const body = {
+    webhook: {
+      topic: "orders/paid",
+      address: `${process.env.SHOPIFY_APP_URL}/api/webhooks/orders/paid`,
+      format: "json",
+    },
+  };
 
   const response = await fetch(endpoint, {
     method: "POST",
@@ -22,7 +15,7 @@ export async function registerOrderPaidWebhook(shop: string, accessToken: string
       "X-Shopify-Access-Token": accessToken,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ query }),
+    body: JSON.stringify(body),
   });
 
   const result = await response.json();
