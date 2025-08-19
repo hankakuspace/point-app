@@ -39,7 +39,12 @@ export async function POST(req: NextRequest) {
     }
 
     console.log("✅ HMAC verified");
-    return new NextResponse("Webhook verified ✅", { status: 200 });
+
+    // ⑥ JSON パース
+    const body = JSON.parse(rawBody.toString("utf-8"));
+    console.log("📦 Webhook payload:", body);
+
+    return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("❌ Webhook error:", err);
     return new NextResponse("Server error", { status: 500 });
