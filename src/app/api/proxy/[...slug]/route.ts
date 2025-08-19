@@ -3,10 +3,12 @@ import { NextResponse } from "next/server";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { slug: string[] } }
+  context: { params: { slug: string[] } }
 ) {
+  const { slug } = context.params;
+
   return NextResponse.json({
     ok: true,
-    slug: params.slug,
+    slug,
   });
 }
