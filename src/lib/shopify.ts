@@ -4,7 +4,7 @@ export async function registerOrderPaidWebhook(shop: string, accessToken: string
   const query = `
     mutation {
       webhookSubscriptionCreate(
-        topic: ORDERS_PAID,
+        topic: ORDERS_UPDATED,
         webhookSubscription: {
           callbackUrl: "${process.env.SHOPIFY_APP_URL}/api/webhooks/orders/paid"
           format: JSON
