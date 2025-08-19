@@ -3,7 +3,7 @@ export async function registerOrderPaidWebhook(shop: string, accessToken: string
 
   const body = {
     webhook: {
-      topic: "orders/paid",
+      topic: "orders/updated", // ✅ orders/paid → orders/updated に変更
       address: `${process.env.SHOPIFY_APP_URL}/api/webhooks/orders/paid`,
       format: "json",
     },
