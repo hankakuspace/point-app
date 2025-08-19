@@ -30,12 +30,17 @@ export async function GET(req: NextRequest) {
       }
     );
 
+    const rawText = await tokenRes.text(); // レスポンスを必ず文字列で取る
+
     if (!tokenRes.ok) {
-      console.error("❌ Token exchange failed:", await tokenRes.text());
-      return new NextResponse("Failed to exchange token", { status: 500 });
+      console.error("❌ Token exchange failed:", tokenRes.status, rawText);
+      return new NextResponse(
+        `Failed to exchange token: ${tokenRes.status} ${rawText}`,
+        { status: 500 }
+      );
     }
 
-    const tokenJson = await tokenRes.json();
+    const tokenJson = JSON.parse(rawText);
     const accessToken = tokenJson.access_token as string;
     console.log("✅ Access token retrieved for", shop);
 
