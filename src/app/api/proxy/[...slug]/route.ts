@@ -4,12 +4,19 @@ export async function GET(
   req: NextRequest,
   { params }: { params: { slug: string[] } }
 ) {
-  const { searchParams } = new URL(req.url);
-  const echo = searchParams.get("echo") || "no-echo";
+  try {
+    const { slug } = params;
 
-  return NextResponse.json({
-    ok: true,
-    slug: params.slug,
-    echo,
-  });
+    return NextResponse.json({
+      ok: true,
+      message: "Proxy route working",
+      slug,
+    });
+  } catch (error) {
+    console.error("Proxy route error:", error);
+    return NextResponse.json(
+      { ok: false, error: "Internal Server Error" },
+      { status: 500 }
+    );
+  }
 }
