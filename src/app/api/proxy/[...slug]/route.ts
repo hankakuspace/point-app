@@ -5,7 +5,8 @@ export async function GET(
   req: NextRequest,
   context: { params: { slug: string[] } }
 ) {
-  const { slug } = context.params;
+  // context から slug を取得
+  const slug = context.params.slug;
 
   return NextResponse.json({
     ok: true,
