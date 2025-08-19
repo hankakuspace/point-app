@@ -1,20 +1,65 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/firebase"; // Firestore 保存用
+import { db } from "@/lib/firebase";
 import { registerOrderPaidWebhook } from "@/lib/shopify";
 
 export const runtime = "nodejs";
 
 export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const shop = searchParams.get("shop")!;
-  const accessToken = "..."; // ここは既存の認証フローで取得したトークン
+  try {
+    const { searchParams } = new URL(req.url);
+    const shop = searchParams.get("shop");
+    const code = searchParams.get("code");
 
-  // トークンを Firestore へ保存（既存の実装に合わせる）
-  await db.collection("shops").doc(shop).set({ accessToken }, { merge: true });
+    if (!shop || !code) {
+      return new NextResponse("Missing shop or code", { status: 400 });
+    }
 
-  // ✅ Webhook を登録
-  await registerOrderPaidWebhook(shop, accessToken);
+    // ================================
+    // ① Shopify からアクセストークンを取得
+    // ================================
+    const tokenRes = await fetch(
+      `https://${shop}/admin/oauth/access_token`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          client_id: process.env.SHOPIFY_API_KEY,
+          client_secret: process.env.SHOPIFY_API_SECRET,
+          code,
+        }),
+      }
+    );
 
-return NextResponse.redirect(`${process.env.SHOPIFY_APP_URL}/?installed=1`);
+    if (!tokenRes.ok) {
+      console.error("❌ Token exchange failed:", await tokenRes.text());
+      return new NextResponse("Failed to exchange token", { status: 500 });
+    }
 
+    const tokenJson = await tokenRes.json();
+    const accessToken = tokenJson.access_token as string;
+    console.log("✅ Access token retrieved for", shop);
+
+    // ================================
+    // ② Firestore に保存
+    // ================================
+    await db.collection("shops").doc(shop).set(
+      { accessToken, installedAt: new Date().toISOString() },
+      { merge: true }
+    );
+
+    // ================================
+    // ③ Webhook を登録
+    // ================================
+    await registerOrderPaidWebhook(shop, accessToken);
+
+    // ================================
+    // ④ 成功時はトップページにリダイレクト
+    // ================================
+    return NextResponse.redirect(
+      `${process.env.SHOPIFY_APP_URL}/?installed=1&shop=${shop}`
+    );
+  } catch (err) {
+    console.error("❌ Auth callback error:", err);
+    return new NextResponse("Auth callback failed", { status: 500 });
+  }
 }
