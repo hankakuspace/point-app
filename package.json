@@ -4,6 +4,7 @@
     "@types/node": "^24.2.1",
     "@types/react": "^19.1.10",
     "autoprefixer": "^10.4.21",
+    "concurrently": "^8.2.2",
     "firebase": "^10.14.1",
     "firebase-admin": "^13.4.0",
     "next": "^15.4.6",
@@ -11,13 +12,15 @@
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "tailwindcss": "^4.1.12",
-    "typescript": "^5.9.2",
-    "concurrently": "^8.2.2"
+    "typescript": "^5.9.2"
   },
   "scripts": {
     "dev": "next dev",
     "dev:ngrok": "concurrently \"npm run dev\" \"ngrok http --url=hankaku-app.ngrok.io http://127.0.0.1:3000\"",
     "build": "next build",
     "start": "next start"
+  },
+  "devDependencies": {
+    "eslint": "^9.33.0"
   }
 }
