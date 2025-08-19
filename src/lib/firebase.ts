@@ -5,6 +5,14 @@ const projectId = process.env.FIREBASE_PROJECT_ID;
 const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
 const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n");
 
+// 🔥 デバッグログ
+console.log("🔥 Firebase ENV check:", {
+  projectId,
+  clientEmail,
+  privateKeyExists: !!privateKey,
+  privateKeySample: privateKey?.substring(0, 50),
+});
+
 if (!getApps().length) {
   if (!projectId || !clientEmail || !privateKey) {
     throw new Error("Missing Firebase environment variables");
