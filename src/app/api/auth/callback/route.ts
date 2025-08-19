@@ -14,9 +14,7 @@ export async function GET(req: NextRequest) {
       return new NextResponse("Missing shop or code", { status: 400 });
     }
 
-    // ================================
     // ① Shopify からアクセストークンを取得
-    // ================================
     const tokenRes = await fetch(
       `https://${shop}/admin/oauth/access_token`,
       {
@@ -30,8 +28,7 @@ export async function GET(req: NextRequest) {
       }
     );
 
-    const rawText = await tokenRes.text(); // レスポンスを必ず文字列で取る
-
+    const rawText = await tokenRes.text();
     if (!tokenRes.ok) {
       console.error("❌ Token exchange failed:", tokenRes.status, rawText);
       return new NextResponse(
@@ -43,23 +40,18 @@ export async function GET(req: NextRequest) {
     const tokenJson = JSON.parse(rawText);
     const accessToken = tokenJson.access_token as string;
     console.log("✅ Access token retrieved for", shop);
+    console.log("🔥 AccessToken:", accessToken); // ← 追加ログ
 
-    // ================================
     // ② Firestore に保存
-    // ================================
     await db.collection("shops").doc(shop).set(
       { accessToken, installedAt: new Date().toISOString() },
       { merge: true }
     );
 
-    // ================================
     // ③ Webhook を登録
-    // ================================
     await registerOrderPaidWebhook(shop, accessToken);
 
-    // ================================
     // ④ 成功時はトップページにリダイレクト
-    // ================================
     return NextResponse.redirect(
       `${process.env.SHOPIFY_APP_URL}/?installed=1&shop=${shop}`
     );
