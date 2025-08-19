@@ -1,24 +1,17 @@
-// src/app/page.tsx
 "use client";
-
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { useEffect } from "react";
 
-export default function Home() {
+function Content() {
   const searchParams = useSearchParams();
-  const shop = searchParams.get("shop");
+  const id = searchParams.get("id");
+  return <div>ID: {id}</div>;
+}
 
-  useEffect(() => {
-    if (shop) {
-      // shop パラメータがあれば認証にリダイレクト
-      window.location.href = `/api/auth?${searchParams.toString()}`;
-    }
-  }, [shop, searchParams]);
-
+export default function Page() {
   return (
-    <main style={{ padding: "2rem", fontFamily: "sans-serif" }}>
-      <h1>美サーチポイント管理アプリ</h1>
-      <p>Shopify ストアと連携するにはアプリをインストールしてください。</p>
-    </main>
+    <Suspense fallback={<div>Loading...</div>}>
+      <Content />
+    </Suspense>
   );
 }
