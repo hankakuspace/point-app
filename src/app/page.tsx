@@ -1,8 +1,8 @@
 "use client";
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 
-export default function Page() {
+function Content() {
   const searchParams = useSearchParams();
   const shop = searchParams.get("shop");
 
@@ -13,4 +13,12 @@ export default function Page() {
   }, [shop]);
 
   return <div>Loading Shopify App…</div>;
+}
+
+export default function Page() {
+  return (
+    <Suspense fallback={<div>Loading…</div>}>
+      <Content />
+    </Suspense>
+  );
 }
