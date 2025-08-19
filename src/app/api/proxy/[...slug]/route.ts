@@ -1,12 +1,10 @@
-import type { NextRequest } from "next/server";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(
   req: NextRequest,
   context: { params: { slug: string[] } }
 ) {
-  // context から slug を取得
-  const slug = context.params.slug;
+  const { slug } = context.params;
 
   return NextResponse.json({
     ok: true,
