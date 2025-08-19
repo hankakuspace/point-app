@@ -4,8 +4,18 @@ import { useSearchParams } from "next/navigation";
 
 function Content() {
   const searchParams = useSearchParams();
-  const id = searchParams.get("id");
-  return <div>ID: {id}</div>;
+  const shop = searchParams.get("shop");
+  const installed = searchParams.get("installed");
+
+  if (installed) {
+    return <div>✅ アプリのインストールが完了しました！</div>;
+  }
+
+  if (shop) {
+    return <div>Shopify ストア <b>{shop}</b> でアプリを開いています。</div>;
+  }
+
+  return <div>ようこそ！</div>;
 }
 
 export default function Page() {

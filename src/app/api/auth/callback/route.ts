@@ -15,5 +15,6 @@ export async function GET(req: NextRequest) {
   // ✅ Webhook を登録
   await registerOrderPaidWebhook(shop, accessToken);
 
-  return NextResponse.redirect(`${process.env.SHOPIFY_APP_URL}/?installed=1`);
+return NextResponse.redirect(`${process.env.SHOPIFY_APP_URL}/?installed=1`);
+
 }
