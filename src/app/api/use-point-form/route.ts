@@ -98,7 +98,7 @@ function renderHtml({
 }
 
 function renderCartDiscountRedirectHtml(discountCode: string) {
-  const redirectUrl = `/discount/${encodeURIComponent(discountCode)}?redirect=/cart`;
+  const redirectUrl = `/discount/${encodeURIComponent(discountCode)}?redirect=/checkout`;
 
   return new NextResponse(
     `<!doctype html>
@@ -106,7 +106,7 @@ function renderCartDiscountRedirectHtml(discountCode: string) {
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>カートへ戻っています</title>
+  <title>チェックアウトへ移動しています</title>
   <script>
     window.top.location.href = ${JSON.stringify(redirectUrl)};
   </script>
@@ -141,7 +141,7 @@ function renderCartDiscountRedirectHtml(discountCode: string) {
       <p style="margin:0 0 8px;color:#6d7175;font-size:13px;">ポイントMAN</p>
       <h1 style="margin:0 0 16px;font-size:24px;">割引を適用しています</h1>
       <p style="margin:0 0 16px;font-size:15px;line-height:1.8;">
-        割引コード ${discountCode} を適用してカートへ戻っています。
+        割引コード ${discountCode} を適用してチェックアウトへ移動しています。
       </p>
       <p style="margin:0;font-size:14px;">
         自動で移動しない場合は <a href="${redirectUrl}" target="_top">こちら</a> をクリックしてください。
@@ -286,9 +286,9 @@ export async function POST(req: Request) {
           },
         },
         combinesWith: {
-          orderDiscounts: true,
-          productDiscounts: true,
-          shippingDiscounts: true,
+          orderDiscounts: false,
+          productDiscounts: false,
+          shippingDiscounts: false,
         },
       },
     };

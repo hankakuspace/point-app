@@ -254,6 +254,16 @@ export async function POST(req: Request) {
         throw new Error("POINT_ALREADY_GRANTED");
       }
 
+      let latestRedemptionSnap:
+        | FirebaseFirestore.DocumentSnapshot<FirebaseFirestore.DocumentData>
+        | null = null;
+      let latestRedemption: FirebaseFirestore.DocumentData = {};
+
+      if (redemptionRef && redemptionSnap?.exists && redemptionPoints > 0) {
+        latestRedemptionSnap = await transaction.get(redemptionRef);
+        latestRedemption = latestRedemptionSnap.data() || {};
+      }
+
       const currentPoints =
         typeof customerData.points === "number" && Number.isFinite(customerData.points)
           ? customerData.points
@@ -283,10 +293,7 @@ export async function POST(req: Request) {
         timestamp: now,
       });
 
-      if (redemptionRef && redemptionSnap?.exists && redemptionPoints > 0) {
-        const latestRedemptionSnap = await transaction.get(redemptionRef);
-        const latestRedemption = latestRedemptionSnap.data() || {};
-
+      if (redemptionRef && latestRedemptionSnap?.exists && redemptionPoints > 0) {
         if (latestRedemption.status === "issued") {
           transaction.set(
             db.collection("point_logs").doc(`point_use_${orderId}_${pointDiscountCode}`),

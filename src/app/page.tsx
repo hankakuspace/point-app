@@ -11,6 +11,7 @@ type HomePageProps = {
     signature?: string;
     embedded?: string;
     host?: string;
+    mode?: string;
   }>;
 };
 
@@ -19,6 +20,84 @@ export default async function Home({ searchParams }: HomePageProps) {
 
   const loggedInCustomerId = params?.logged_in_customer_id;
   const shop = params?.shop;
+  const mode = params?.mode;
+
+  if (!loggedInCustomerId && mode === "cart") {
+    return (
+      <main
+        style={{
+          background: "#ffffff",
+          fontFamily:
+            '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+          color: "#202223",
+          maxWidth: "420px",
+        }}
+      >
+        <section
+          style={{
+            border: "1px solid #dfe3e8",
+            borderRadius: "12px",
+            padding: "16px",
+            background: "#ffffff",
+            boxShadow: "0 1px 2px rgba(0,0,0,0.06)",
+          }}
+        >
+          <p
+            style={{
+              margin: "0 0 6px",
+              fontSize: "13px",
+              color: "#6d7175",
+            }}
+          >
+            ポイントMAN
+          </p>
+
+          <p
+            style={{
+              margin: "0 0 8px",
+              fontSize: "16px",
+              fontWeight: 700,
+              color: "#202223",
+            }}
+          >
+            ポイントを利用するにはログインが必要です
+          </p>
+
+          <p
+            style={{
+              margin: "0 0 12px",
+              fontSize: "13px",
+              color: "#6d7175",
+              lineHeight: 1.6,
+            }}
+          >
+            ログイン後、保有ポイントを確認してカートで利用できます。
+          </p>
+
+          <a
+            href="/account"
+            target="_top"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: "100%",
+              boxSizing: "border-box",
+              borderRadius: "8px",
+              padding: "10px 12px",
+              background: "#008060",
+              color: "#ffffff",
+              fontSize: "14px",
+              fontWeight: 700,
+              textDecoration: "none",
+            }}
+          >
+            ログインする
+          </a>
+        </section>
+      </main>
+    );
+  }
 
   if (!loggedInCustomerId) {
     redirect("/admin/customers");
@@ -56,6 +135,150 @@ export default async function Home({ searchParams }: HomePageProps) {
     typeof customer?.email === "string"
       ? customer.email
       : "";
+
+  if (mode === "cart") {
+    return (
+      <main
+        style={{
+          background: "#ffffff",
+          fontFamily:
+            '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+          color: "#202223",
+          maxWidth: "420px",
+        }}
+      >
+        <section
+          style={{
+            border: "1px solid #dfe3e8",
+            borderRadius: "12px",
+            padding: "16px",
+            background: "#ffffff",
+            boxShadow: "0 1px 2px rgba(0,0,0,0.06)",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              gap: "12px",
+              alignItems: "center",
+              marginBottom: "12px",
+            }}
+          >
+            <div>
+              <p
+                style={{
+                  margin: "0 0 4px",
+                  fontSize: "13px",
+                  color: "#6d7175",
+                }}
+              >
+                ポイントMAN
+              </p>
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: "18px",
+                  fontWeight: 700,
+                }}
+              >
+                {points.toLocaleString()} pt
+              </p>
+            </div>
+
+            <span
+              style={{
+                display: "inline-flex",
+                padding: "4px 10px",
+                borderRadius: "999px",
+                background: "#ecfdf3",
+                color: "#166534",
+                fontSize: "12px",
+                fontWeight: 700,
+                whiteSpace: "nowrap",
+              }}
+            >
+              利用可能
+            </span>
+          </div>
+
+          {customerSnap.exists ? (
+            <form method="post" action="/apps/apps/api/use-point-form" target="_top">
+              <input type="hidden" name="customerId" value={loggedInCustomerId} />
+              <input type="hidden" name="email" value={email} />
+              <input type="hidden" name="returnMode" value="cart" />
+
+              <label
+                style={{
+                  display: "grid",
+                  gap: "6px",
+                  fontSize: "13px",
+                  fontWeight: 600,
+                  marginBottom: "10px",
+                }}
+              >
+                利用ポイント数
+                <input
+                  name="usePoints"
+                  type="number"
+                  min={minUsePoints}
+                  max={Math.min(maxUsePoints, points)}
+                  defaultValue={minUsePoints}
+                  style={{
+                    width: "100%",
+                    boxSizing: "border-box",
+                    border: "1px solid #c9cccf",
+                    borderRadius: "8px",
+                    padding: "9px 10px",
+                    fontSize: "14px",
+                  }}
+                />
+              </label>
+
+              <p
+                style={{
+                  margin: "0 0 12px",
+                  fontSize: "12px",
+                  color: "#6d7175",
+                }}
+              >
+                {minUsePoints.toLocaleString()} pt 〜{" "}
+                {Math.min(maxUsePoints, points).toLocaleString()} pt まで利用できます。
+              </p>
+
+              <button
+                type="submit"
+                disabled={points < minUsePoints}
+                style={{
+                  width: "100%",
+                  border: "none",
+                  borderRadius: "8px",
+                  padding: "10px 12px",
+                  background: points < minUsePoints ? "#c9cccf" : "#008060",
+                  color: "#ffffff",
+                  fontSize: "14px",
+                  fontWeight: 700,
+                  cursor: points < minUsePoints ? "not-allowed" : "pointer",
+                }}
+              >
+                ポイントを使う
+              </button>
+            </form>
+          ) : (
+            <p
+              style={{
+                margin: 0,
+                fontSize: "13px",
+                color: "#9a3412",
+              }}
+            >
+              ポイント情報がまだ作成されていません。
+            </p>
+          )}
+        </section>
+      </main>
+    );
+  }
 
   return (
     <main
@@ -191,7 +414,7 @@ export default async function Home({ searchParams }: HomePageProps) {
               1ポイント = 1円として利用できます。発行された割引コードをチェックアウト画面で入力してください。
             </p>
 
-            <form method="post" action="/apps/apps/api/use-point-form">
+            <form method="post" action="/apps/apps/api/use-point-form" target="_top">
               <input type="hidden" name="customerId" value={loggedInCustomerId} />
               <input type="hidden" name="email" value={email} />
 

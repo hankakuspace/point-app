@@ -92,9 +92,9 @@ export async function POST(req: Request) {
           },
         },
         combinesWith: {
-          orderDiscounts: true,
-          productDiscounts: true,
-          shippingDiscounts: true,
+          orderDiscounts: false,
+          productDiscounts: false,
+          shippingDiscounts: false,
         },
       },
     };
