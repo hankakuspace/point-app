@@ -238,6 +238,29 @@ export async function POST(req: Request) {
       });
     }
 
+    const nowBeforeIssue = new Date().toISOString();
+
+    const issuedSnapshot = await db
+      .collection("point_redemptions")
+      .where("customerId", "==", customerId)
+      .where("status", "==", "issued")
+      .get();
+
+    if (!issuedSnapshot.empty) {
+      const batch = db.batch();
+
+      issuedSnapshot.docs.forEach((doc) => {
+        batch.update(doc.ref, {
+          status: "expired",
+          expiredAt: nowBeforeIssue,
+          updatedAt: nowBeforeIssue,
+          expireReason: "reissued",
+        });
+      });
+
+      await batch.commit();
+    }
+
     const discountAmount = usePoints;
     const discountCodeValue = `POINT-${Math.floor(Math.random() * 100000)}`;
 
