@@ -1,4 +1,5 @@
 // src/app/api/webhooks/orders/paid/route.ts
+import crypto from "crypto";
 import { NextResponse } from "next/server";
 import { db } from "@/lib/firebaseAdmin";
 
@@ -6,6 +7,7 @@ type ShopifyOrderPaidPayload = {
   id?: number | string;
   email?: string;
   total_price?: string;
+  subtotal_price?: string;
   financial_status?: string;
   customer?: {
     id?: number | string;
@@ -13,9 +15,44 @@ type ShopifyOrderPaidPayload = {
   } | null;
 };
 
+function verifyShopifyWebhook(rawBody: string, hmacHeader: string | null) {
+  const secret = process.env.SHOPIFY_API_SECRET;
+
+  if (!secret || !hmacHeader) {
+    return false;
+  }
+
+  const digest = crypto
+    .createHmac("sha256", secret)
+    .update(rawBody, "utf8")
+    .digest("base64");
+
+  const digestBuffer = Buffer.from(digest, "utf8");
+  const hmacBuffer = Buffer.from(hmacHeader, "utf8");
+
+  if (digestBuffer.length !== hmacBuffer.length) {
+    return false;
+  }
+
+  return crypto.timingSafeEqual(digestBuffer, hmacBuffer);
+}
+
+
 export async function POST(req: Request) {
   try {
-    const payload = (await req.json()) as ShopifyOrderPaidPayload;
+    const rawBody = await req.text();
+    const hmacHeader = req.headers.get("x-shopify-hmac-sha256");
+
+    if (!verifyShopifyWebhook(rawBody, hmacHeader)) {
+      console.warn("Webhook rejected: invalid HMAC");
+
+      return NextResponse.json(
+        { success: false, message: "Invalid webhook signature" },
+        { status: 401 }
+      );
+    }
+
+    const payload = JSON.parse(rawBody) as ShopifyOrderPaidPayload;
 
     const orderId = String(payload.id ?? "").trim();
     const email = String(payload.email ?? payload.customer?.email ?? "")
@@ -23,6 +60,7 @@ export async function POST(req: Request) {
       .toLowerCase();
     const customerId = String(payload.customer?.id ?? "").trim();
     const totalPrice = Number.parseFloat(String(payload.total_price ?? "0"));
+    const subtotalPrice = Number.parseFloat(String(payload.subtotal_price ?? "0"));
     const financialStatus = String(payload.financial_status ?? "")
       .trim()
       .toLowerCase();
@@ -98,11 +136,37 @@ export async function POST(req: Request) {
     }
 
     if (!customerDoc || !customerDoc.exists) {
-      console.warn("No matching customer found:", { orderId, customerId, email });
-      return NextResponse.json(
-        { success: false, message: "Customer not found" },
-        { status: 404 }
+      if (!customerId) {
+        console.warn("No matching customer found:", { orderId, customerId, email });
+        return NextResponse.json(
+          { success: false, message: "Customer not found" },
+          { status: 404 }
+        );
+      }
+
+      const newCustomerRef = db.collection("customers").doc(customerId);
+
+      await newCustomerRef.set(
+        {
+          id: customerId,
+          customerId: Number(customerId),
+          shopifyCustomerGid: `gid://shopify/Customer/${customerId}`,
+          email,
+          name: "",
+          points: 0,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+        { merge: true }
       );
+
+      customerDoc = await newCustomerRef.get();
+
+      console.log("✅ Created customer from webhook", {
+        orderId,
+        customerId,
+        email,
+      });
     }
 
     const customerData = customerDoc.data() || {};
@@ -115,12 +179,22 @@ export async function POST(req: Request) {
         ? settings.pointRate
         : 0.03;
 
-    const addPoints = Math.floor(totalPrice * pointRate);
+    const includeShipping = Boolean(settings?.includeShipping);
+
+    const calculationBase =
+      includeShipping || !Number.isFinite(subtotalPrice) || subtotalPrice <= 0
+        ? totalPrice
+        : subtotalPrice;
+
+    const addPoints = Math.floor(calculationBase * pointRate);
 
     if (addPoints <= 0) {
       console.log("Webhook skipped: calculated points are zero", {
         orderId,
         totalPrice,
+        subtotalPrice,
+        calculationBase,
+        includeShipping,
         pointRate,
       });
       return NextResponse.json({
@@ -158,6 +232,9 @@ export async function POST(req: Request) {
         reason: "purchase",
         email,
         totalPrice,
+        subtotalPrice,
+        calculationBase,
+        includeShipping,
         pointRate,
         timestamp: new Date().toISOString(),
       });
