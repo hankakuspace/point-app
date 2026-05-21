@@ -1,3 +1,4 @@
+// src/app/api/auth/callback/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/firebase";
 import { registerOrderPaidWebhook } from "@/lib/shopify";
@@ -9,51 +10,58 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const shop = searchParams.get("shop");
     const code = searchParams.get("code");
+    const host = searchParams.get("host");
 
     if (!shop || !code) {
       return new NextResponse("Missing shop or code", { status: 400 });
     }
 
-    // ① Shopify からアクセストークンを取得
-    const tokenRes = await fetch(
-      `https://${shop}/admin/oauth/access_token`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          client_id: process.env.SHOPIFY_API_KEY,
-          client_secret: process.env.SHOPIFY_API_SECRET,
-          code,
-        }),
-      }
-    );
+    // ✅ ① アクセストークン取得
+    const tokenRes = await fetch(`https://${shop}/admin/oauth/access_token`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        client_id: process.env.SHOPIFY_API_KEY,
+        client_secret: process.env.SHOPIFY_API_SECRET,
+        code,
+      }),
+    });
 
-    const rawText = await tokenRes.text();
     if (!tokenRes.ok) {
+      const rawText = await tokenRes.text();
       console.error("❌ Token exchange failed:", tokenRes.status, rawText);
       return new NextResponse(
-        `Failed to exchange token: ${tokenRes.status} ${rawText}`,
+        `Failed to exchange token: ${tokenRes.status}`,
         { status: 500 }
       );
     }
 
-    const tokenJson = JSON.parse(rawText);
-    const accessToken = tokenJson.access_token as string;
+    const tokenJson = await tokenRes.json();
+    const accessToken = tokenJson.access_token;
     console.log("✅ Access token retrieved for", shop);
-    console.log("🔥 AccessToken:", accessToken); // ← 追加ログ
 
-    // ② Firestore に保存
-    await db.collection("shops").doc(shop).set(
-      { accessToken, installedAt: new Date().toISOString() },
-      { merge: true }
-    );
+    // ✅ ② Firestore 保存（try/catch 保護付き）
+    try {
+      await db.collection("shops").doc(shop).set(
+        { accessToken, installedAt: new Date().toISOString() },
+        { merge: true }
+      );
+      console.log(`✅ Firestore updated for ${shop}`);
+    } catch (e) {
+      console.error("❌ Firestore update failed:", e);
+    }
 
-    // ③ Webhook を登録
-    await registerOrderPaidWebhook(shop, accessToken);
+    // ✅ ③ Webhook登録を失敗しても無視
+    try {
+      await registerOrderPaidWebhook(shop, accessToken);
+      console.log("✅ Webhook registered");
+    } catch (e) {
+      console.warn("⚠️ Webhook registration failed:", e);
+    }
 
-    // ④ 成功時はトップページにリダイレクト
+    // ✅ ④ リダイレクト
     return NextResponse.redirect(
-      `${process.env.SHOPIFY_APP_URL}/?installed=1&shop=${shop}`
+      `${process.env.SHOPIFY_APP_URL}/admin/customers?host=${host}&shop=${shop}`
     );
   } catch (err) {
     console.error("❌ Auth callback error:", err);
