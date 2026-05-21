@@ -1,12 +1,16 @@
 // src/app/api/webhooks/orders/paid/route.ts
 import { NextResponse } from "next/server";
-import { db } from "@/lib/firestore";
+import { db } from "@/lib/firebaseAdmin";
 
 type ShopifyOrderPaidPayload = {
   id?: number | string;
   email?: string;
   total_price?: string;
   financial_status?: string;
+  customer?: {
+    id?: number | string;
+    email?: string;
+  } | null;
 };
 
 export async function POST(req: Request) {
@@ -14,18 +18,29 @@ export async function POST(req: Request) {
     const payload = (await req.json()) as ShopifyOrderPaidPayload;
 
     const orderId = String(payload.id ?? "").trim();
-    const email = String(payload.email ?? "").trim().toLowerCase();
+    const email = String(payload.email ?? payload.customer?.email ?? "")
+      .trim()
+      .toLowerCase();
+    const customerId = String(payload.customer?.id ?? "").trim();
     const totalPrice = Number.parseFloat(String(payload.total_price ?? "0"));
-    const financialStatus = String(payload.financial_status ?? "").trim().toLowerCase();
+    const financialStatus = String(payload.financial_status ?? "")
+      .trim()
+      .toLowerCase();
 
     if (!orderId) {
       console.warn("Webhook skipped: missing order id");
-      return NextResponse.json({ success: false, message: "Missing order id" }, { status: 400 });
+      return NextResponse.json(
+        { success: false, message: "Missing order id" },
+        { status: 400 }
+      );
     }
 
-    if (!email) {
-      console.warn("Webhook skipped: missing email", { orderId });
-      return NextResponse.json({ success: false, message: "Missing email" }, { status: 400 });
+    if (!email && !customerId) {
+      console.warn("Webhook skipped: missing customer identifier", { orderId });
+      return NextResponse.json(
+        { success: false, message: "Missing customer identifier" },
+        { status: 400 }
+      );
     }
 
     if (financialStatus && financialStatus !== "paid") {
@@ -42,19 +57,55 @@ export async function POST(req: Request) {
 
     if (!Number.isFinite(totalPrice) || totalPrice <= 0) {
       console.warn("Webhook skipped: invalid total price", { orderId, totalPrice });
-      return NextResponse.json({ success: false, message: "Invalid total price" }, { status: 400 });
+      return NextResponse.json(
+        { success: false, message: "Invalid total price" },
+        { status: 400 }
+      );
     }
 
-    const customersRef = db.collection("customers");
-    const customerSnapshot = await customersRef.where("email", "==", email).limit(1).get();
+    let customerDoc:
+      | FirebaseFirestore.QueryDocumentSnapshot<FirebaseFirestore.DocumentData>
+      | FirebaseFirestore.DocumentSnapshot<FirebaseFirestore.DocumentData>
+      | null = null;
 
-    if (customerSnapshot.empty) {
-      console.warn("No matching customer found:", email);
-      return NextResponse.json({ success: false, message: "Customer not found" }, { status: 404 });
+    if (customerId) {
+      const directDoc = await db.collection("customers").doc(customerId).get();
+      if (directDoc.exists) {
+        customerDoc = directDoc;
+      } else {
+        const byCustomerIdSnapshot = await db
+          .collection("customers")
+          .where("customerId", "==", Number(customerId))
+          .limit(1)
+          .get();
+
+        if (!byCustomerIdSnapshot.empty) {
+          customerDoc = byCustomerIdSnapshot.docs[0];
+        }
+      }
     }
 
-    const customerDoc = customerSnapshot.docs[0];
-    const customerData = customerDoc.data();
+    if (!customerDoc && email) {
+      const byEmailSnapshot = await db
+        .collection("customers")
+        .where("email", "==", email)
+        .limit(1)
+        .get();
+
+      if (!byEmailSnapshot.empty) {
+        customerDoc = byEmailSnapshot.docs[0];
+      }
+    }
+
+    if (!customerDoc || !customerDoc.exists) {
+      console.warn("No matching customer found:", { orderId, customerId, email });
+      return NextResponse.json(
+        { success: false, message: "Customer not found" },
+        { status: 404 }
+      );
+    }
+
+    const customerData = customerDoc.data() || {};
 
     const settingsRef = db.collection("settings").doc("default");
     const settingsSnap = await settingsRef.get();
@@ -93,12 +144,14 @@ export async function POST(req: Request) {
           ? customerData.points
           : 0;
 
-      transaction.update(customerDoc.ref, {
+      transaction.update(customerDoc!.ref, {
         points: currentPoints + addPoints,
+        updatedAt: new Date().toISOString(),
       });
 
       transaction.set(pointLogRef, {
-        customerId: customerDoc.id,
+        customerDocId: customerDoc!.id,
+        customerId: customerId || null,
         type: "add",
         points: addPoints,
         orderId,
@@ -110,8 +163,21 @@ export async function POST(req: Request) {
       });
     });
 
-    console.log(`✅ Added ${addPoints} points to ${email} for order ${orderId}`);
-    return NextResponse.json({ success: true, added: addPoints, orderId });
+    console.log("✅ Added purchase points", {
+      orderId,
+      customerDocId: customerDoc.id,
+      customerId,
+      email,
+      addPoints,
+    });
+
+    return NextResponse.json({
+      success: true,
+      added: addPoints,
+      orderId,
+      customerDocId: customerDoc.id,
+      customerId,
+    });
   } catch (error) {
     if ((error as Error).message === "POINT_ALREADY_GRANTED") {
       console.log("Webhook skipped: points already granted");
