@@ -304,6 +304,7 @@ export async function POST(req: Request) {
       });
     }
 
+    const discountNodeId = discountResult?.codeDiscountNode?.id;
     const discountCode =
       discountResult?.codeDiscountNode?.codeDiscount?.codes?.edges?.[0]?.node?.code;
 
@@ -320,6 +321,7 @@ export async function POST(req: Request) {
       customerId,
       email,
       discountCode,
+      discountNodeId: discountNodeId || null,
       points: usePoints,
       status: "issued",
       source: returnMode === "cart" ? "cart" : "app_proxy",
