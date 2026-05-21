@@ -1,58 +1,131 @@
-import crypto from "crypto";
-import { NextRequest, NextResponse } from "next/server";
+// src/app/api/webhooks/orders/paid/route.ts
+import { NextResponse } from "next/server";
+import { db } from "@/lib/firestore";
 
-export const runtime = "nodejs";
+type ShopifyOrderPaidPayload = {
+  id?: number | string;
+  email?: string;
+  total_price?: string;
+  financial_status?: string;
+};
 
-// 生のリクエストボディを stream から読む
-async function getRawBody(req: Request): Promise<Buffer> {
-  const reader = (req as any).body?.getReader?.();
-  if (reader) {
-    const chunks: Uint8Array[] = [];
-    let result;
-    while (!(result = await reader.read()).done) {
-      chunks.push(result.value);
-    }
-    return Buffer.concat(chunks.map((c) => Buffer.from(c)));
-  }
-  return Buffer.from(await req.arrayBuffer());
-}
-
-export async function POST(req: NextRequest) {
+export async function POST(req: Request) {
   try {
-    const rawBody = await getRawBody(req);
+    const payload = (await req.json()) as ShopifyOrderPaidPayload;
 
-    const hmacHeader = req.headers.get("x-shopify-hmac-sha256") || "";
-    const secret = (process.env.SHOPIFY_API_SECRET || "").trim();
+    const orderId = String(payload.id ?? "").trim();
+    const email = String(payload.email ?? "").trim().toLowerCase();
+    const totalPrice = Number.parseFloat(String(payload.total_price ?? "0"));
+    const financialStatus = String(payload.financial_status ?? "").trim().toLowerCase();
 
-    const digest = crypto
-      .createHmac("sha256", secret)
-      .update(rawBody)
-      .digest("base64");
-
-    console.log("📩 HMAC from Shopify:", hmacHeader);
-    console.log("🧮 Calculated digest:", digest);
-    console.log("🔑 Secret length:", secret.length);
-    console.log("📦 Raw body (first 200 chars):", rawBody.toString("utf-8").substring(0, 200));
-
-    const valid =
-      hmacHeader &&
-      crypto.timingSafeEqual(
-        Buffer.from(hmacHeader, "base64"),
-        Buffer.from(digest, "base64")
-      );
-
-    if (!valid) {
-      console.error("❌ Invalid HMAC signature");
-      return new NextResponse("Invalid HMAC signature", { status: 401 });
+    if (!orderId) {
+      console.warn("Webhook skipped: missing order id");
+      return NextResponse.json({ success: false, message: "Missing order id" }, { status: 400 });
     }
 
-    console.log("✅ HMAC verified");
-    const body = JSON.parse(rawBody.toString("utf-8"));
-    console.log("📦 Webhook payload:", body);
+    if (!email) {
+      console.warn("Webhook skipped: missing email", { orderId });
+      return NextResponse.json({ success: false, message: "Missing email" }, { status: 400 });
+    }
 
-    return NextResponse.json({ ok: true });
-  } catch (err) {
-    console.error("❌ Webhook error:", err);
-    return new NextResponse("Server error", { status: 500 });
+    if (financialStatus && financialStatus !== "paid") {
+      console.log("Webhook skipped: financial_status is not paid", {
+        orderId,
+        financialStatus,
+      });
+      return NextResponse.json({
+        success: true,
+        skipped: true,
+        reason: "financial_status_not_paid",
+      });
+    }
+
+    if (!Number.isFinite(totalPrice) || totalPrice <= 0) {
+      console.warn("Webhook skipped: invalid total price", { orderId, totalPrice });
+      return NextResponse.json({ success: false, message: "Invalid total price" }, { status: 400 });
+    }
+
+    const customersRef = db.collection("customers");
+    const customerSnapshot = await customersRef.where("email", "==", email).limit(1).get();
+
+    if (customerSnapshot.empty) {
+      console.warn("No matching customer found:", email);
+      return NextResponse.json({ success: false, message: "Customer not found" }, { status: 404 });
+    }
+
+    const customerDoc = customerSnapshot.docs[0];
+    const customerData = customerDoc.data();
+
+    const settingsRef = db.collection("settings").doc("default");
+    const settingsSnap = await settingsRef.get();
+    const settings = settingsSnap.exists ? settingsSnap.data() : { pointRate: 0.03 };
+    const pointRate =
+      typeof settings?.pointRate === "number" && Number.isFinite(settings.pointRate)
+        ? settings.pointRate
+        : 0.03;
+
+    const addPoints = Math.floor(totalPrice * pointRate);
+
+    if (addPoints <= 0) {
+      console.log("Webhook skipped: calculated points are zero", {
+        orderId,
+        totalPrice,
+        pointRate,
+      });
+      return NextResponse.json({
+        success: true,
+        skipped: true,
+        reason: "calculated_points_zero",
+      });
+    }
+
+    const pointLogRef = db.collection("point_logs").doc(`purchase_${orderId}`);
+
+    await db.runTransaction(async (transaction) => {
+      const pointLogSnap = await transaction.get(pointLogRef);
+
+      if (pointLogSnap.exists) {
+        throw new Error("POINT_ALREADY_GRANTED");
+      }
+
+      const currentPoints =
+        typeof customerData.points === "number" && Number.isFinite(customerData.points)
+          ? customerData.points
+          : 0;
+
+      transaction.update(customerDoc.ref, {
+        points: currentPoints + addPoints,
+      });
+
+      transaction.set(pointLogRef, {
+        customerId: customerDoc.id,
+        type: "add",
+        points: addPoints,
+        orderId,
+        reason: "purchase",
+        email,
+        totalPrice,
+        pointRate,
+        timestamp: new Date().toISOString(),
+      });
+    });
+
+    console.log(`✅ Added ${addPoints} points to ${email} for order ${orderId}`);
+    return NextResponse.json({ success: true, added: addPoints, orderId });
+  } catch (error) {
+    if ((error as Error).message === "POINT_ALREADY_GRANTED") {
+      console.log("Webhook skipped: points already granted");
+      return NextResponse.json({
+        success: true,
+        skipped: true,
+        reason: "already_granted",
+      });
+    }
+
+    console.error("Webhook error:", error);
+    return NextResponse.json(
+      { success: false, error: (error as Error).message },
+      { status: 500 }
+    );
   }
 }
