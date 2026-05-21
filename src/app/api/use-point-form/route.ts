@@ -158,6 +158,54 @@ function renderCartDiscountRedirectHtml(discountCode: string) {
   );
 }
 
+async function deactivateReissuedShopifyDiscount(
+  discountNodeId?: string | null,
+  shop?: string | null
+) {
+  if (!discountNodeId) {
+    return {
+      shopifyDeactivated: false,
+      error: "Missing discountNodeId",
+    };
+  }
+
+  const mutation = `
+    mutation DeactivateDiscount($id: ID!) {
+      discountCodeDeactivate(id: $id) {
+        codeDiscountNode {
+          id
+        }
+        userErrors {
+          field
+          message
+        }
+      }
+    }
+  `;
+
+  const data = await callShopifyAdminAPI(
+    mutation,
+    {
+      id: discountNodeId,
+    },
+    shop || undefined
+  );
+
+  const userErrors = data?.discountCodeDeactivate?.userErrors || [];
+
+  if (userErrors.length > 0) {
+    return {
+      shopifyDeactivated: false,
+      error: userErrors.map((error: any) => error.message).join(" / "),
+    };
+  }
+
+  return {
+    shopifyDeactivated: true,
+    error: null,
+  };
+}
+
 export async function POST(req: Request) {
   try {
     const url = new URL(req.url);
@@ -249,14 +297,43 @@ export async function POST(req: Request) {
     if (!issuedSnapshot.empty) {
       const batch = db.batch();
 
-      issuedSnapshot.docs.forEach((doc) => {
+      for (const doc of issuedSnapshot.docs) {
+        const redemption = doc.data();
+        const discountNodeId =
+          typeof redemption.discountNodeId === "string"
+            ? redemption.discountNodeId
+            : null;
+        const redemptionShop =
+          typeof redemption.shop === "string"
+            ? redemption.shop
+            : shop || null;
+
+        let shopifyDeactivated = false;
+        let expireError: string | null = null;
+
+        try {
+          const deactivateResult =
+            await deactivateReissuedShopifyDiscount(
+              discountNodeId,
+              redemptionShop
+            );
+
+          shopifyDeactivated = deactivateResult.shopifyDeactivated;
+          expireError = deactivateResult.error || null;
+        } catch (error) {
+          shopifyDeactivated = false;
+          expireError = (error as Error).message;
+        }
+
         batch.update(doc.ref, {
           status: "expired",
           expiredAt: nowBeforeIssue,
           updatedAt: nowBeforeIssue,
           expireReason: "reissued",
+          shopifyDeactivated,
+          expireError,
         });
-      });
+      }
 
       await batch.commit();
     }
