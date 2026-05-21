@@ -39,6 +39,24 @@ export default async function Home({ searchParams }: HomePageProps) {
       ? customer.points
       : 0;
 
+  const settingsSnap = await db.collection("settings").doc("default").get();
+  const settings = settingsSnap.exists ? settingsSnap.data() : {};
+
+  const minUsePoints =
+    typeof settings?.minUsePoints === "number"
+      ? settings.minUsePoints
+      : 100;
+
+  const maxUsePoints =
+    typeof settings?.maxUsePoints === "number"
+      ? settings.maxUsePoints
+      : 1000;
+
+  const email =
+    typeof customer?.email === "string"
+      ? customer.email
+      : "";
+
   return (
     <main
       style={{
@@ -143,6 +161,98 @@ export default async function Home({ searchParams }: HomePageProps) {
               : "ポイントMAN未登録"}
           </dd>
         </dl>
+
+        {customerSnap.exists && (
+          <section
+            style={{
+              marginTop: "24px",
+              borderTop: "1px solid #dfe3e8",
+              paddingTop: "24px",
+            }}
+          >
+            <h2
+              style={{
+                margin: "0 0 12px",
+                fontSize: "18px",
+                color: "#202223",
+              }}
+            >
+              ポイントを利用する
+            </h2>
+
+            <p
+              style={{
+                margin: "0 0 16px",
+                fontSize: "14px",
+                color: "#6d7175",
+                lineHeight: 1.7,
+              }}
+            >
+              1ポイント = 1円として利用できます。発行された割引コードをチェックアウト画面で入力してください。
+            </p>
+
+            <form method="post" action="/apps/apps/api/use-point-form">
+              <input type="hidden" name="customerId" value={loggedInCustomerId} />
+              <input type="hidden" name="email" value={email} />
+
+              <label
+                style={{
+                  display: "grid",
+                  gap: "6px",
+                  fontSize: "14px",
+                  color: "#202223",
+                  fontWeight: 600,
+                }}
+              >
+                利用ポイント数
+                <input
+                  name="usePoints"
+                  type="number"
+                  min={minUsePoints}
+                  max={Math.min(maxUsePoints, points)}
+                  defaultValue={minUsePoints}
+                  style={{
+                    width: "100%",
+                    boxSizing: "border-box",
+                    border: "1px solid #c9cccf",
+                    borderRadius: "8px",
+                    padding: "10px 12px",
+                    fontSize: "16px",
+                  }}
+                />
+              </label>
+
+              <p
+                style={{
+                  margin: "12px 0 16px",
+                  fontSize: "13px",
+                  color: "#6d7175",
+                }}
+              >
+                利用可能範囲：{minUsePoints.toLocaleString()} pt 〜{" "}
+                {Math.min(maxUsePoints, points).toLocaleString()} pt
+              </p>
+
+              <button
+                type="submit"
+                disabled={points < minUsePoints}
+                style={{
+                  width: "100%",
+                  border: "none",
+                  borderRadius: "10px",
+                  padding: "12px 16px",
+                  background: points < minUsePoints ? "#c9cccf" : "#008060",
+                  color: "#ffffff",
+                  fontSize: "15px",
+                  fontWeight: 700,
+                  cursor: points < minUsePoints ? "not-allowed" : "pointer",
+                }}
+              >
+                割引コードを発行する
+              </button>
+            </form>
+          </section>
+        )}
 
         {!customerSnap.exists && (
           <p
