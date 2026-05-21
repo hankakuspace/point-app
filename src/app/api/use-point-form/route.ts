@@ -97,6 +97,67 @@ function renderHtml({
   );
 }
 
+function renderCartDiscountRedirectHtml(discountCode: string) {
+  const redirectUrl = `/discount/${encodeURIComponent(discountCode)}?redirect=/cart`;
+
+  return new NextResponse(
+    `<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>カートへ戻っています</title>
+  <script>
+    window.top.location.href = ${JSON.stringify(redirectUrl)};
+  </script>
+  <style>
+    body {
+      margin: 0;
+      background: #f6f6f7;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: #202223;
+    }
+    main {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 40px 16px;
+    }
+    .card {
+      background: #fff;
+      border: 1px solid #dfe3e8;
+      border-radius: 16px;
+      padding: 28px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+    }
+    a {
+      color: #008060;
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="card">
+      <p style="margin:0 0 8px;color:#6d7175;font-size:13px;">ポイントMAN</p>
+      <h1 style="margin:0 0 16px;font-size:24px;">割引を適用しています</h1>
+      <p style="margin:0 0 16px;font-size:15px;line-height:1.8;">
+        割引コード ${discountCode} を適用してカートへ戻っています。
+      </p>
+      <p style="margin:0;font-size:14px;">
+        自動で移動しない場合は <a href="${redirectUrl}" target="_top">こちら</a> をクリックしてください。
+      </p>
+    </section>
+  </main>
+</body>
+</html>`,
+    {
+      headers: {
+        "Content-Type": "text/html; charset=utf-8",
+      },
+    }
+  );
+}
+
 export async function POST(req: Request) {
   try {
     const url = new URL(req.url);
@@ -104,6 +165,7 @@ export async function POST(req: Request) {
     const loggedInCustomerId = url.searchParams.get("logged_in_customer_id") || "";
 
     const formData = await req.formData();
+    const returnMode = String(formData.get("returnMode") || "").trim();
 
     const formCustomerId = String(formData.get("customerId") || "").trim();
     const customerId = loggedInCustomerId || formCustomerId;
@@ -252,21 +314,24 @@ export async function POST(req: Request) {
       });
     }
 
-    const remainingPoints = currentPoints - usePoints;
+    const remainingPoints = currentPoints;
 
-    await customerRef.update({
-      points: remainingPoints,
-      updatedAt: new Date().toISOString(),
-    });
-
-    await db.collection("point_logs").add({
+    await db.collection("point_redemptions").doc(discountCode).set({
       customerId,
-      type: "use",
-      points: usePoints,
-      reason: "point_use",
+      email,
       discountCode,
-      timestamp: new Date().toISOString(),
+      points: usePoints,
+      status: "issued",
+      source: returnMode === "cart" ? "cart" : "app_proxy",
+      shop: shop || null,
+      createdAt: new Date().toISOString(),
+      usedAt: null,
+      orderId: null,
     });
+
+    if (returnMode === "cart") {
+      return renderCartDiscountRedirectHtml(discountCode);
+    }
 
     return renderHtml({
       title: "割引コードを発行しました",

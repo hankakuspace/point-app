@@ -9,6 +9,11 @@ type ShopifyOrderPaidPayload = {
   total_price?: string;
   subtotal_price?: string;
   financial_status?: string;
+  discount_codes?: Array<{
+    code?: string;
+    amount?: string;
+    type?: string;
+  }>;
   customer?: {
     id?: number | string;
     email?: string;
@@ -64,6 +69,15 @@ export async function POST(req: Request) {
     const financialStatus = String(payload.financial_status ?? "")
       .trim()
       .toLowerCase();
+
+    const discountCodes = Array.isArray(payload.discount_codes)
+      ? payload.discount_codes
+          .map((discount) => String(discount.code ?? "").trim())
+          .filter(Boolean)
+      : [];
+
+    const pointDiscountCode =
+      discountCodes.find((code) => code.startsWith("POINT-")) || "";
 
     if (!orderId) {
       console.warn("Webhook skipped: missing order id");
@@ -188,6 +202,33 @@ export async function POST(req: Request) {
 
     const addPoints = Math.floor(calculationBase * pointRate);
 
+    let redemptionRef:
+      | FirebaseFirestore.DocumentReference<FirebaseFirestore.DocumentData>
+      | null = null;
+    let redemptionSnap:
+      | FirebaseFirestore.DocumentSnapshot<FirebaseFirestore.DocumentData>
+      | null = null;
+    let redemptionPoints = 0;
+
+    if (pointDiscountCode) {
+      redemptionRef = db.collection("point_redemptions").doc(pointDiscountCode);
+      redemptionSnap = await redemptionRef.get();
+
+      if (redemptionSnap.exists) {
+        const redemption = redemptionSnap.data() || {};
+
+        if (
+          redemption.status === "issued" &&
+          String(redemption.customerId) === String(customerDoc.id) &&
+          typeof redemption.points === "number" &&
+          Number.isFinite(redemption.points) &&
+          redemption.points > 0
+        ) {
+          redemptionPoints = redemption.points;
+        }
+      }
+    }
+
     if (addPoints <= 0) {
       console.log("Webhook skipped: calculated points are zero", {
         orderId,
@@ -218,9 +259,12 @@ export async function POST(req: Request) {
           ? customerData.points
           : 0;
 
+      const now = new Date().toISOString();
+      const nextPoints = currentPoints + addPoints - redemptionPoints;
+
       transaction.update(customerDoc!.ref, {
-        points: currentPoints + addPoints,
-        updatedAt: new Date().toISOString(),
+        points: nextPoints,
+        updatedAt: now,
       });
 
       transaction.set(pointLogRef, {
@@ -236,8 +280,35 @@ export async function POST(req: Request) {
         calculationBase,
         includeShipping,
         pointRate,
-        timestamp: new Date().toISOString(),
+        timestamp: now,
       });
+
+      if (redemptionRef && redemptionSnap?.exists && redemptionPoints > 0) {
+        const latestRedemptionSnap = await transaction.get(redemptionRef);
+        const latestRedemption = latestRedemptionSnap.data() || {};
+
+        if (latestRedemption.status === "issued") {
+          transaction.set(
+            db.collection("point_logs").doc(`point_use_${orderId}_${pointDiscountCode}`),
+            {
+              customerDocId: customerDoc!.id,
+              customerId: customerDoc!.id,
+              type: "use",
+              points: redemptionPoints,
+              orderId,
+              reason: "point_use",
+              discountCode: pointDiscountCode,
+              timestamp: now,
+            }
+          );
+
+          transaction.update(redemptionRef, {
+            status: "used",
+            usedAt: now,
+            orderId,
+          });
+        }
+      }
     });
 
     console.log("✅ Added purchase points", {
