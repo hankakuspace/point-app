@@ -18,12 +18,23 @@ import {
   useIndexResourceState,
 } from "@shopify/polaris";
 
+interface PointLog {
+  id: string;
+  customerId: string;
+  type: "add" | "use";
+  points: number;
+  reason?: string;
+  orderId?: string;
+  timestamp?: any;
+}
+
 interface Customer {
   id: string;
   name: string;
   email: string;
   points: number;
   createdAt: any;
+  latestPointLog?: PointLog | null;
 }
 
 type BulkOperation = "add" | "use";
@@ -222,6 +233,14 @@ export default function CustomersPage() {
     }
   };
 
+  const formatPointLogReason = (reason?: string) => {
+    if (reason === "purchase") return "購入付与";
+    if (reason === "admin_edit") return "管理調整";
+    if (reason === "campaign") return "キャンペーン";
+    if (!reason) return "-";
+    return reason;
+  };
+
   if (loading) {
     return (
       <div style={{ padding: "40px", textAlign: "center" }}>
@@ -373,6 +392,7 @@ export default function CustomersPage() {
             { title: "名前" },
             { title: "メール" },
             { title: "ポイント" },
+            { title: "最新履歴" },
             { title: "登録日" },
           ]}
         >
@@ -401,6 +421,31 @@ export default function CustomersPage() {
                 <Badge tone="success">
                   {customer.points || 0} pt
                 </Badge>
+              </IndexTable.Cell>
+
+              <IndexTable.Cell>
+                {customer.latestPointLog ? (
+                  <div style={{ display: "grid", gap: "4px" }}>
+                    <Badge
+                      tone={
+                        customer.latestPointLog.type === "use"
+                          ? "critical"
+                          : "success"
+                      }
+                    >
+                      {customer.latestPointLog.type === "use" ? "-" : "+"}
+                      {customer.latestPointLog.points || 0} pt
+                    </Badge>
+                    <Text as="p" variant="bodySm" tone="subdued">
+                      {formatPointLogReason(customer.latestPointLog.reason)}
+                    </Text>
+                    <Text as="p" variant="bodySm" tone="subdued">
+                      {formatDate(customer.latestPointLog.timestamp)}
+                    </Text>
+                  </div>
+                ) : (
+                  "-"
+                )}
               </IndexTable.Cell>
 
               <IndexTable.Cell>
