@@ -447,7 +447,13 @@ export default function LogsPage() {
 
         {/* ログ一覧 */}
         <Layout.Section>
-          <Card title="ログ一覧" sectioned>
+          <Card>
+            <div style={{ marginBottom: "12px" }}>
+              <Text as="h2" variant="headingMd">
+                ログ一覧
+              </Text>
+            </div>
+
             {loading ? (
               <div
                 style={{
@@ -601,8 +607,7 @@ export default function LogsPage() {
                                 : 'attention'
                             }
                           >
-                            {log.type === 'use' ? '-' : '+'}
-                            {log.points} pt
+                            {`${log.type === 'use' ? '-' : '+'}${log.points} pt`}
                           </Badge>
                         </IndexTable.Cell>
 

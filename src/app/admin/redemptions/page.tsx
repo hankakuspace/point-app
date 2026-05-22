@@ -626,7 +626,7 @@ export default function RedemptionsPage() {
 
               <IndexTable.Cell>
                 <Badge tone="info">
-                  {redemption.points || 0} pt
+                  {`${redemption.points || 0} pt`}
                 </Badge>
               </IndexTable.Cell>
 
