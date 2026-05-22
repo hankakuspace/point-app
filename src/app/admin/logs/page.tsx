@@ -281,12 +281,11 @@ export default function LogsPage() {
                 style={{
                   flex: "0 1 160px",
                   minWidth: "145px",
-                  transform: "translateY(4px)",
                 }}
               >
                 <TextField
                   label="開始日"
-                  type="date"
+                  placeholder="YYYY-MM-DD"
                   value={startDate}
                   onChange={(value) => setStartDate(value)}
                   autoComplete="off"
@@ -297,12 +296,11 @@ export default function LogsPage() {
                 style={{
                   flex: "0 1 160px",
                   minWidth: "145px",
-                  transform: "translateY(4px)",
                 }}
               >
                 <TextField
                   label="終了日"
-                  type="date"
+                  placeholder="YYYY-MM-DD"
                   value={endDate}
                   onChange={(value) => setEndDate(value)}
                   autoComplete="off"
