@@ -92,7 +92,6 @@ export default function RedemptionsPage() {
   const [searchText, setSearchText] = useState("");
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [expireLoading, setExpireLoading] = useState(false);
-  const [retryFailedLoading, setRetryFailedLoading] = useState(false);
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState("20");
 
@@ -163,41 +162,6 @@ export default function RedemptionsPage() {
       alert("未使用コードの期限切れ処理でエラーが発生しました");
     } finally {
       setExpireLoading(false);
-    }
-  };
-
-  const handleRetryFailedDeactivation = async () => {
-    if (!confirm("Shopify無効化が未完了のコードを再実行しますか？")) {
-      return;
-    }
-
-    setRetryFailedLoading(true);
-
-    try {
-      const res = await fetch("/api/admin/redemptions/expire", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ retryFailed: true }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok || !data.success) {
-        alert("Shopify無効化の再実行に失敗しました");
-        return;
-      }
-
-      alert(`${data.expiredCount || 0}件のShopify無効化を再実行しました`);
-
-      setPage(0);
-      await fetchRedemptions();
-    } catch (error) {
-      console.error("Failed to retry failed deactivations:", error);
-      alert("Shopify無効化の再実行でエラーが発生しました");
-    } finally {
-      setRetryFailedLoading(false);
     }
   };
 
