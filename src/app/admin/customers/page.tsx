@@ -121,7 +121,7 @@ function formatShortDate(value: any) {
       return "-";
     }
 
-    return `${date.getMonth() + 1}/${date.getDate()} ${date
+    return `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()} ${date
       .getHours()
       .toString()
       .padStart(2, "0")}:${date
