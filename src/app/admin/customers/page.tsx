@@ -457,7 +457,7 @@ export default function CustomersPage() {
           <div
             style={{
               display: "grid",
-          gridTemplateColumns: "minmax(0, 1.3fr) minmax(360px, 1fr)",
+          gridTemplateColumns: "minmax(0, 1.3fr) minmax(360px, 1fr) minmax(260px, 0.7fr)",
           gap: "12px",
           alignItems: "stretch",
         }}
@@ -510,6 +510,31 @@ export default function CustomersPage() {
                 同期する
               </Button>
             </div>
+          </div>
+        </Card>
+
+        <Card>
+          <div
+            style={{
+              padding: "12px 16px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "12px",
+              height: "100%",
+            }}
+          >
+            <Text as="p" variant="bodyMd" fontWeight="medium">
+              選択中：{selectedResources.length}名
+            </Text>
+
+            <Button
+              variant="primary"
+              onClick={() => setBulkModalOpen(true)}
+              disabled={selectedResources.length === 0}
+            >
+              選択顧客にポイント操作
+            </Button>
           </div>
         </Card>
           </div>
