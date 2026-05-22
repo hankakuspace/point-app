@@ -1,7 +1,29 @@
 // src/app/api/logs/route.ts
 import { NextRequest, NextResponse } from 'next/server';
+import { Timestamp } from 'firebase-admin/firestore';
 import { db } from '@/lib/firebase';
-import admin from 'firebase-admin';
+
+function getTimestampValue(value: any) {
+  if (!value) {
+    return 0;
+  }
+
+  if (typeof value === 'string') {
+    const time = new Date(value).getTime();
+    return Number.isFinite(time) ? time : 0;
+  }
+
+  if (typeof value.toDate === 'function') {
+    const time = value.toDate().getTime();
+    return Number.isFinite(time) ? time : 0;
+  }
+
+  if (typeof value._seconds === 'number') {
+    return value._seconds * 1000 + Math.floor((value._nanoseconds || 0) / 1000000);
+  }
+
+  return 0;
+}
 
 export async function GET(req: NextRequest) {
   try {
@@ -15,41 +37,43 @@ export async function GET(req: NextRequest) {
     const startDate = searchParams.get('startDate') || '';
     const endDate = searchParams.get('endDate') || '';
 
-    let queryRef: FirebaseFirestore.Query = db
-      .collection('point_logs');
-
-    if (shop) {
-      queryRef = queryRef.where('shop', '==', shop);
-    }
+    let queryRef: FirebaseFirestore.Query = db.collection('point_logs');
 
     if (customerId) {
       queryRef = queryRef.where('customerId', '==', customerId);
     }
+
     if (type) {
       queryRef = queryRef.where('type', '==', type);
     }
+
     if (reason) {
       queryRef = queryRef.where('reason', '==', reason);
     }
+
     if (orderId) {
       queryRef = queryRef.where('orderId', '==', orderId);
     }
+
     if (startDate) {
-      const startLocal = new Date(startDate + 'T00:00:00'); // JST
-      const startUTC = new Date(startLocal.getTime() - 9 * 60 * 60 * 1000); // JST→UTC
-      const start = admin.firestore.Timestamp.fromDate(startUTC);
+      const startLocal = new Date(startDate + 'T00:00:00');
+      const startUTC = new Date(startLocal.getTime() - 9 * 60 * 60 * 1000);
+      const start = Timestamp.fromDate(startUTC);
       queryRef = queryRef.where('timestamp', '>=', start);
     }
+
     if (endDate) {
-      const endLocal = new Date(endDate + 'T23:59:59'); // JST
-      const endUTC = new Date(endLocal.getTime() - 9 * 60 * 60 * 1000); // JST→UTC
-      const end = admin.firestore.Timestamp.fromDate(endUTC);
+      const endLocal = new Date(endDate + 'T23:59:59');
+      const endUTC = new Date(endLocal.getTime() - 9 * 60 * 60 * 1000);
+      const end = Timestamp.fromDate(endUTC);
       queryRef = queryRef.where('timestamp', '<=', end);
     }
 
     const snapshot = await queryRef.get();
+
     let data = snapshot.docs.map((doc) => {
       const d = doc.data() as any;
+
       return {
         id: doc.id,
         ...d,
@@ -58,6 +82,10 @@ export async function GET(req: NextRequest) {
           : d.timestamp || null,
       };
     });
+
+    if (shop) {
+      data = data.filter((log) => log.shop === shop);
+    }
 
     const searchKeyword = search.trim().toLowerCase();
 
@@ -75,9 +103,8 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // サーバー側で降順ソート保証
     data = data.sort(
-      (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      (a, b) => getTimestampValue(b.timestamp) - getTimestampValue(a.timestamp)
     );
 
     return NextResponse.json({ logs: data });
