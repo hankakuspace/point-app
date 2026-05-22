@@ -565,15 +565,25 @@ export default function RedemptionsPage() {
               style={{
                 padding: "16px",
                 display: "flex",
-                justifyContent: "center",
+                justifyContent: "flex-start",
+                alignItems: "center",
+                gap: "12px",
               }}
             >
               <Pagination
                 hasPrevious={page > 0}
-                onPrevious={() => setPage((currentPage) => Math.max(currentPage - 1, 0))}
-                hasNext={(page + 1) * pageSizeNumber < filteredRedemptions.length}
+                onPrevious={() =>
+                  setPage((currentPage) => Math.max(currentPage - 1, 0))
+                }
+                hasNext={
+                  (page + 1) * pageSizeNumber < filteredRedemptions.length
+                }
                 onNext={() => setPage((currentPage) => currentPage + 1)}
               />
+
+              <Text as="p" variant="bodySm" tone="subdued">
+                {pageStart}〜{pageEnd}件目 / 全{filteredRedemptions.length}件
+              </Text>
             </div>
           </Card>
         </Layout.Section>
