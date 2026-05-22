@@ -245,6 +245,83 @@ export default function RedemptionsPage() {
     );
   }, [redemptions]);
 
+  const exportCSV = () => {
+    if (filteredRedemptions.length === 0) return;
+
+    const header = [
+      "id",
+      "discountCode",
+      "status",
+      "customerId",
+      "email",
+      "points",
+      "orderId",
+      "shopifyDeactivated",
+      "expireError",
+      "createdAt",
+      "usedAt",
+      "expiredAt",
+    ];
+
+    const rows = filteredRedemptions.map((redemption) => [
+      redemption.id,
+      redemption.discountCode || "",
+      redemption.status || "",
+      redemption.customerId || "",
+      redemption.email || "",
+      redemption.points || 0,
+      redemption.orderId || "",
+      redemption.shopifyDeactivated === true
+        ? "true"
+        : redemption.shopifyDeactivated === false
+          ? "false"
+          : "",
+      redemption.expireError || "",
+      redemption.createdAt || "",
+      redemption.usedAt || "",
+      redemption.expiredAt || "",
+    ]);
+
+    const csvContent =
+      "\uFEFF" +
+      [header, ...rows]
+        .map((row) =>
+          row
+            .map((value) => JSON.stringify(String(value ?? "")))
+            .join(",")
+        )
+        .join("\n");
+
+    const blob = new Blob([csvContent], {
+      type: "text/csv;charset=utf-8;",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+
+    a.href = url;
+    a.download = "point_redemptions.csv";
+    a.click();
+
+    URL.revokeObjectURL(url);
+  };
+
+  const exportJSON = () => {
+    if (filteredRedemptions.length === 0) return;
+
+    const jsonContent = JSON.stringify(filteredRedemptions, null, 2);
+    const blob = new Blob([jsonContent], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+
+    a.href = url;
+    a.download = "point_redemptions.json";
+    a.click();
+
+    URL.revokeObjectURL(url);
+  };
+
   if (loading) {
     return (
       <div style={{ padding: "40px", textAlign: "center" }}>
@@ -258,6 +335,16 @@ export default function RedemptionsPage() {
       title="ポイント利用コード"
       subtitle={`発行コード数: ${redemptions.length}件 / 表示: ${filteredRedemptions.length}件`}
       fullWidth
+      secondaryActions={[
+        {
+          content: "CSV",
+          onAction: exportCSV,
+        },
+        {
+          content: "JSON",
+          onAction: exportJSON,
+        },
+      ]}
     >
       <Layout>
         <Layout.Section>
