@@ -514,7 +514,7 @@ export default function LogsPage() {
                 <div
                   style={{
                     display: "flex",
-                    justifyContent: "flex-end",
+                    justifyContent: "flex-start",
                     alignItems: "center",
                     gap: "12px",
                     marginTop: "12px",
