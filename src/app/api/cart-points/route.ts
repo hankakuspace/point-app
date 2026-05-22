@@ -95,6 +95,9 @@ export async function GET(req: Request) {
 
   const maxAvailable = Math.min(maxUsePoints, points);
   const canUse = points >= minUsePoints;
+  const rangeText = canUse
+    ? `${minUsePoints.toLocaleString()} pt 〜 ${maxAvailable.toLocaleString()} pt まで利用できます。`
+    : `ポイントは${minUsePoints.toLocaleString()} ptから利用できます。`;
 
   return renderHtml(`<!doctype html>
 <html lang="ja">
@@ -141,7 +144,7 @@ export async function GET(req: Request) {
         />
       </label>
 
-      <p class="range">${minUsePoints.toLocaleString()} pt 〜 ${maxAvailable.toLocaleString()} pt まで利用できます。</p>
+      <p class="range">${rangeText}</p>
 
       <button type="submit" ${canUse ? "" : "disabled"}>ポイントを使う</button>
     </form>
