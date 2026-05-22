@@ -303,19 +303,36 @@ export default function LogsPage() {
                   display: "flex",
                   gap: "8px",
                   alignItems: "end",
+                  paddingTop: "22px",
                   whiteSpace: "nowrap",
                 }}
               >
-                <Button
-                  onClick={fetchLogs}
-                  variant="primary"
+                <div
+                  style={{
+                    minHeight: "34px",
+                    display: "flex",
+                    alignItems: "center",
+                  }}
                 >
-                  検索
-                </Button>
+                  <Button
+                    onClick={fetchLogs}
+                    variant="primary"
+                  >
+                    検索
+                  </Button>
+                </div>
 
-                <Button onClick={resetFilters}>
-                  リセット
-                </Button>
+                <div
+                  style={{
+                    minHeight: "34px",
+                    display: "flex",
+                    alignItems: "center",
+                  }}
+                >
+                  <Button onClick={resetFilters}>
+                    リセット
+                  </Button>
+                </div>
               </div>
             </div>
           </Card>
