@@ -81,6 +81,7 @@ export default function RedemptionsPage() {
   const [redemptions, setRedemptions] = useState<PointRedemption[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<RedemptionStatus>("all");
+  const [searchInput, setSearchInput] = useState("");
   const [searchText, setSearchText] = useState("");
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [expireLoading, setExpireLoading] = useState(false);
