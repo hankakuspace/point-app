@@ -13,6 +13,7 @@ import {
   Select,
   Button,
   TextField,
+  Pagination,
   Tooltip,
 } from "@shopify/polaris";
 
@@ -85,6 +86,7 @@ export default function RedemptionsPage() {
   const [searchText, setSearchText] = useState("");
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [expireLoading, setExpireLoading] = useState(false);
+  const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState("20");
 
   const fetchRedemptions = async () => {
@@ -147,6 +149,7 @@ export default function RedemptionsPage() {
 
       alert(`${data.expiredCount || 0}件の未使用コードを期限切れにしました`);
 
+      setPage(0);
       await fetchRedemptions();
     } catch (error) {
       console.error("Failed to expire redemptions:", error);
@@ -190,9 +193,16 @@ export default function RedemptionsPage() {
   }, [redemptions, statusFilter, searchText]);
 
   const pageSizeNumber = Number(pageSize);
-  const visibleRedemptions = filteredRedemptions.slice(0, pageSizeNumber);
-  const pageStart = filteredRedemptions.length === 0 ? 0 : 1;
-  const pageEnd = Math.min(pageSizeNumber, filteredRedemptions.length);
+  const visibleRedemptions = filteredRedemptions.slice(
+    page * pageSizeNumber,
+    (page + 1) * pageSizeNumber
+  );
+  const pageStart =
+    filteredRedemptions.length === 0 ? 0 : page * pageSizeNumber + 1;
+  const pageEnd =
+    filteredRedemptions.length === 0
+      ? 0
+      : Math.min((page + 1) * pageSizeNumber, filteredRedemptions.length);
 
   const summaryCounts = useMemo(() => {
     return redemptions.reduce(
@@ -256,6 +266,7 @@ export default function RedemptionsPage() {
               onSubmit={(event) => {
                 event.preventDefault();
                 setSearchText(searchInput.trim());
+                setPage(0);
               }}
               style={{
                 padding: "16px",
@@ -282,9 +293,10 @@ export default function RedemptionsPage() {
                   { label: "期限切れ", value: "expired" },
                 ]}
                 value={statusFilter}
-                onChange={(value) =>
-                  setStatusFilter(value as RedemptionStatus)
-                }
+                onChange={(value) => {
+                  setStatusFilter(value as RedemptionStatus);
+                  setPage(0);
+                }}
               />
 
               <div
@@ -304,6 +316,7 @@ export default function RedemptionsPage() {
                   onClick={() => {
                     setSearchInput("");
                     setSearchText("");
+                    setPage(0);
                   }}
                 >
                   リセット
@@ -390,7 +403,10 @@ export default function RedemptionsPage() {
                     { label: "100件", value: "100" },
                   ]}
                   value={pageSize}
-                  onChange={(value) => setPageSize(value)}
+                  onChange={(value) => {
+                    setPageSize(value);
+                    setPage(0);
+                  }}
                 />
               </div>
             </div>
@@ -544,6 +560,21 @@ export default function RedemptionsPage() {
             </IndexTable.Row>
           ))}
         </IndexTable>
+
+            <div
+              style={{
+                padding: "16px",
+                display: "flex",
+                justifyContent: "center",
+              }}
+            >
+              <Pagination
+                hasPrevious={page > 0}
+                onPrevious={() => setPage((currentPage) => Math.max(currentPage - 1, 0))}
+                hasNext={(page + 1) * pageSizeNumber < filteredRedemptions.length}
+                onNext={() => setPage((currentPage) => currentPage + 1)}
+              />
+            </div>
           </Card>
         </Layout.Section>
       </Layout>
