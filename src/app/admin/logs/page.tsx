@@ -224,7 +224,7 @@ export default function LogsPage() {
               style={{
                 display: "grid",
                 gridTemplateColumns:
-                  "repeat(auto-fit, minmax(170px, 1fr))",
+                  "repeat(5, minmax(140px, 1fr))",
                 gap: "12px",
                 alignItems: "end",
               }}
@@ -286,9 +286,12 @@ export default function LogsPage() {
 
               <div
                 style={{
+                  gridColumn: "2 / -1",
                   display: "flex",
                   gap: "8px",
+                  alignItems: "end",
                   paddingBottom: "2px",
+                  whiteSpace: "nowrap",
                 }}
               >
                 <Button
