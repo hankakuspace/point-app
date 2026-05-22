@@ -214,7 +214,7 @@ export default function LogsPage() {
     ]);
 
   return (
-    <Page title="ポイント履歴管理">
+    <Page title="ポイント履歴管理" fullWidth>
       <Layout>
         {/* フィルタ */}
         <Layout.Section>
@@ -319,55 +319,77 @@ export default function LogsPage() {
 
         {/* 集計カード */}
         <Layout.Section>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
-              gap: "12px",
-            }}
-          >
-            <Card sectioned>
-              <Text as="p" tone="subdued">
-                表示中の履歴
-              </Text>
-              <Text as="p" variant="headingLg">
-                {logs.length} 件
-              </Text>
-            </Card>
+          <Card sectioned>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+                alignItems: "stretch",
+                minHeight: "68px",
+              }}
+            >
+              <div
+                style={{
+                  padding: "4px 20px 4px 4px",
+                  borderRight: "1px solid #e1e3e5",
+                }}
+              >
+                <Text as="p" tone="subdued">
+                  表示中の履歴
+                </Text>
+                <Text as="p" variant="headingMd">
+                  {logs.length} 件
+                </Text>
+              </div>
 
-            <Card sectioned>
-              <Text as="p" tone="subdued">
-                付与履歴
-              </Text>
-              <Text as="p" variant="headingLg">
-                {addLogsCount} 件
-              </Text>
-              <Text as="p" tone="subdued">
-                +{addPointsTotal} pt
-              </Text>
-            </Card>
+              <div
+                style={{
+                  padding: "4px 20px",
+                  borderRight: "1px solid #e1e3e5",
+                }}
+              >
+                <Text as="p" tone="subdued">
+                  付与履歴
+                </Text>
+                <Text as="p" variant="headingMd">
+                  {addLogsCount} 件
+                </Text>
+                <Text as="p" tone="subdued">
+                  +{addPointsTotal} pt
+                </Text>
+              </div>
 
-            <Card sectioned>
-              <Text as="p" tone="subdued">
-                利用履歴
-              </Text>
-              <Text as="p" variant="headingLg">
-                {useLogsCount} 件
-              </Text>
-              <Text as="p" tone="subdued">
-                -{usePointsTotal} pt
-              </Text>
-            </Card>
+              <div
+                style={{
+                  padding: "4px 20px",
+                  borderRight: "1px solid #e1e3e5",
+                }}
+              >
+                <Text as="p" tone="subdued">
+                  利用履歴
+                </Text>
+                <Text as="p" variant="headingMd">
+                  {useLogsCount} 件
+                </Text>
+                <Text as="p" tone="subdued">
+                  -{usePointsTotal} pt
+                </Text>
+              </div>
 
-            <Card sectioned>
-              <Text as="p" tone="subdued">
-                差引
-              </Text>
-              <Text as="p" variant="headingLg">
-                {addPointsTotal - usePointsTotal} pt
-              </Text>
-            </Card>
-          </div>
+              <div
+                style={{
+                  padding: "4px 4px 4px 20px",
+                }}
+              >
+                <Text as="p" tone="subdued">
+                  差引
+                </Text>
+                <Text as="p" variant="headingMd">
+                  {addPointsTotal - usePointsTotal} pt
+                </Text>
+              </div>
+            </div>
+          </Card>
         </Layout.Section>
 
         {/* ログ一覧 */}
