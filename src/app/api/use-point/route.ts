@@ -2,17 +2,24 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/firebaseAdmin";
 import { callShopifyAdminAPI } from "@/lib/shopify";
+import { getPointSettings } from "@/lib/point-settings";
 
 export async function POST(req: Request) {
   try {
-    const { email, usePoints } = await req.json();
+    const { email, usePoints, shop } = await req.json();
+
+    if (!shop) {
+      return NextResponse.json({
+        success: false,
+        message: "Missing shop",
+      });
+    }
 
     if (!email || !usePoints || usePoints <= 0) {
       return NextResponse.json({ success: false, message: "Invalid input" });
     }
 
-    const settingsSnap = await db.collection("settings").doc("default").get();
-    const settings = settingsSnap.exists ? settingsSnap.data() : {};
+    const settings = await getPointSettings(shop);
 
     const minUsePoints =
       typeof settings?.minUsePoints === "number" && Number.isFinite(settings.minUsePoints)
@@ -38,9 +45,14 @@ export async function POST(req: Request) {
       });
     }
 
-    // Firestoreから顧客を検索
+    // Firestoreからショップ一致の顧客を検索
     const customersRef = db.collection("customers");
-    const snapshot = await customersRef.where("email", "==", email).limit(1).get();
+    const snapshot = await customersRef
+      .where("email", "==", email)
+      .where("shop", "==", shop)
+      .limit(1)
+      .get();
+
     if (snapshot.empty) {
       return NextResponse.json({ success: false, message: "Customer not found" });
     }
@@ -55,7 +67,7 @@ export async function POST(req: Request) {
     // 割引額を算出（1ポイント=1円）
     const discountAmount = usePoints;
 
-    // ✅ Shopify Admin APIで割引コードを発行
+    // Shopify Admin APIで割引コードを発行
     const mutation = `
       mutation discountCodeBasicCreate($basicCodeDiscount: DiscountCodeBasicInput!) {
         discountCodeBasicCreate(basicCodeDiscount: $basicCodeDiscount) {
@@ -99,7 +111,7 @@ export async function POST(req: Request) {
       },
     };
 
-    const response = await callShopifyAdminAPI(mutation, variables);
+    const response = await callShopifyAdminAPI(mutation, variables, shop);
     const discountResult = response?.discountCodeBasicCreate;
     const userErrors = discountResult?.userErrors || [];
 
@@ -125,9 +137,11 @@ export async function POST(req: Request) {
     // Firestore更新
     await customerDoc.ref.update({
       points: customerData.points - usePoints,
+      updatedAt: new Date().toISOString(),
     });
 
     await db.collection("point_logs").add({
+      shop,
       customerId: customerDoc.id,
       type: "use",
       points: usePoints,
