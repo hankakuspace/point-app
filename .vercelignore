@@ -1,0 +1,30 @@
+# dependencies
+node_modules
+
+# Next.js build outputs
+.next
+src/.next
+.next_bak*
+
+# local env files
+.env
+.env.*
+src/.env
+src/.env.*
+
+# local Vercel settings
+.vercel
+
+# git
+.git
+
+# local handoff notes
+引き継ぎメモ
+引き継ぎメモ
+
+# accidental/local files
+.DS_Store
+package-lock 2.json
+-d
+-H
+Environment
