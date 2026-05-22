@@ -201,9 +201,19 @@ export default function CustomersPage() {
     setLoading(true);
 
     try {
-      const res = await fetch("/api/admin/customers", {
-        cache: "no-store",
-      });
+      const params = new URLSearchParams(window.location.search);
+      const urlShop = params.get("shop") || "";
+      const storedShop = sessionStorage.getItem("pointman-shop") || "";
+      const shop = urlShop || shopDomain || storedShop;
+
+      const res = await fetch(
+        shop
+          ? `/api/admin/customers?shop=${encodeURIComponent(shop)}`
+          : "/api/admin/customers",
+        {
+          cache: "no-store",
+        }
+      );
 
       const data = await res.json();
       setCustomers(data.customers || []);
@@ -307,6 +317,7 @@ export default function CustomersPage() {
                 customerId,
                 amount,
                 reason: bulkReason,
+                shop: shopDomain || sessionStorage.getItem("pointman-shop") || "",
               }),
             }
           );
