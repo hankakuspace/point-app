@@ -207,7 +207,7 @@ export default function RedemptionsPage() {
           <Card>
         <div
           style={{
-            padding: "12px 16px",
+            padding: "16px",
             display: "grid",
             gridTemplateColumns: "220px auto",
             gap: "12px",
@@ -235,9 +235,10 @@ export default function RedemptionsPage() {
               alignItems: "center",
             }}
           >
-            <Button onClick={fetchRedemptions}>再読み込み</Button>
+            <Button size="large" onClick={fetchRedemptions}>再読み込み</Button>
 
             <Button
+              size="large"
               onClick={handleExpireIssuedCodes}
               loading={expireLoading}
             >
@@ -252,7 +253,7 @@ export default function RedemptionsPage() {
           <Card>
             <div
               style={{
-                padding: "20px",
+                padding: "16px 20px",
                 display: "grid",
                 gridTemplateColumns: "repeat(6, minmax(0, 1fr))",
                 gap: "0",
@@ -272,7 +273,7 @@ export default function RedemptionsPage() {
                 <div
                   key={item.label}
                   style={{
-                    padding: "4px 20px",
+                    padding: "0 20px",
                     borderLeft: index === 0 ? "none" : "1px solid #dfe3e8",
                   }}
                 >
