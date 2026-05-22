@@ -168,10 +168,9 @@ export default function SettingsPage() {
       <Layout>
         <Layout.Section>
           <Card>
-            <div style={{ padding: "16px", display: "grid", gap: "16px" }}>
+            <div style={{ padding: "16px", display: "grid", gap: "12px" }}>
               <Banner tone="info">
-                付与率は画面上では「%」で入力します。保存時には
-                Firestore に 0.05 のような小数で保存されます。
+                付与率は「%」で入力してください。例：5 と入力すると、購入金額の5%をポイント付与します。
               </Banner>
 
               <TextField
@@ -182,7 +181,7 @@ export default function SettingsPage() {
                 onChange={(value) => setPointRatePercent(value)}
                 autoComplete="off"
                 suffix="%"
-                helpText="例：5 と入力すると、購入金額の5%をポイント付与します。"
+                helpText="小数も入力できます。例：3.5"
               />
 
               <Checkbox
@@ -233,7 +232,7 @@ export default function SettingsPage() {
                 suffix="pt"
               />
 
-              <div>
+              <div style={{ marginTop: "4px" }}>
                 <Button
                   variant="primary"
                   onClick={handleSave}
