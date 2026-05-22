@@ -80,6 +80,26 @@ export default function LogsPage() {
     }
   };
 
+  const resetFilters = async () => {
+    setCustomerId('');
+    setType('');
+    setReason('');
+    setStartDate('');
+    setEndDate('');
+    setPage(0);
+    setLoading(true);
+
+    try {
+      const res = await fetch('/api/logs');
+      const data = await res.json();
+      setLogs(data.logs || []);
+    } catch (error) {
+      console.error('Error resetting logs:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchLogs();
   }, []);
@@ -261,6 +281,10 @@ export default function LogsPage() {
                   variant="primary"
                 >
                   検索
+                </Button>
+
+                <Button onClick={resetFilters}>
+                  リセット
                 </Button>
 
                 <Button onClick={exportCSV}>
