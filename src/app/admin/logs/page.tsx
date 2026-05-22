@@ -33,6 +33,7 @@ interface Log {
 export default function LogsPage() {
   const [logs, setLogs] = useState<Log[]>([]);
   const [loading, setLoading] = useState(true);
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
   // フィルタ
   const [searchText, setSearchText] = useState('');
@@ -164,11 +165,18 @@ export default function LogsPage() {
     }
   };
 
-  const copyText = async (value?: string) => {
+  const copyText = async (value?: string, key?: string) => {
     if (!value) return;
 
     try {
       await navigator.clipboard.writeText(value);
+
+      if (key) {
+        setCopiedKey(key);
+        window.setTimeout(() => {
+          setCopiedKey((currentKey) => currentKey === key ? null : currentKey);
+        }, 1200);
+      }
     } catch (error) {
       console.error('Failed to copy text:', error);
     }
@@ -541,10 +549,10 @@ export default function LogsPage() {
                         </IndexTable.Cell>
 
                         <IndexTable.Cell>
-                          <Tooltip content="コピー">
+                          <Tooltip content={copiedKey === `customer-${log.id}` ? "コピーしました" : "コピー"}>
                             <button
                               type="button"
-                              onClick={() => copyText(log.customerId)}
+                              onClick={() => copyText(log.customerId, `customer-${log.id}`)}
                               aria-label="顧客IDをコピー"
                               style={{
                                 border: "none",
@@ -607,10 +615,10 @@ export default function LogsPage() {
 
                         <IndexTable.Cell>
                           {log.orderId ? (
-                            <Tooltip content="コピー">
+                            <Tooltip content={copiedKey === `order-${log.id}` ? "コピーしました" : "コピー"}>
                               <button
                                 type="button"
-                                onClick={() => copyText(log.orderId)}
+                                onClick={() => copyText(log.orderId, `order-${log.id}`)}
                                 aria-label="注文IDをコピー"
                                 style={{
                                   border: "none",
