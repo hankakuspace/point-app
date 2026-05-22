@@ -277,7 +277,13 @@ export default function LogsPage() {
                 />
               </div>
 
-              <div style={{ flex: "0 1 160px", minWidth: "145px" }}>
+              <div
+                style={{
+                  flex: "0 1 160px",
+                  minWidth: "145px",
+                  paddingTop: "1px",
+                }}
+              >
                 <TextField
                   label="開始日"
                   type="date"
@@ -287,7 +293,13 @@ export default function LogsPage() {
                 />
               </div>
 
-              <div style={{ flex: "0 1 160px", minWidth: "145px" }}>
+              <div
+                style={{
+                  flex: "0 1 160px",
+                  minWidth: "145px",
+                  paddingTop: "1px",
+                }}
+              >
                 <TextField
                   label="終了日"
                   type="date"
