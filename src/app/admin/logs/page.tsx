@@ -248,7 +248,7 @@ export default function LogsPage() {
       <Layout>
         {/* フィルタ */}
         <Layout.Section>
-          <Card sectioned>
+          <Card>
             <form
               onSubmit={(event) => {
                 event.preventDefault();
@@ -372,7 +372,7 @@ export default function LogsPage() {
 
         {/* 集計カード */}
         <Layout.Section>
-          <Card sectioned>
+          <Card>
             <div
               style={{
                 display: "grid",
