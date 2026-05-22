@@ -312,16 +312,16 @@ export default function LogsPage() {
                   flex: "0 0 auto",
                   display: "flex",
                   gap: "8px",
-                  alignItems: "end",
+                  alignItems: "center",
                   paddingTop: "22px",
                   whiteSpace: "nowrap",
                 }}
               >
                 <div
                   style={{
-                    minHeight: "34px",
+                    height: "38px",
                     display: "flex",
-                    alignItems: "center",
+                    alignItems: "stretch",
                   }}
                 >
                   <Button
@@ -334,9 +334,9 @@ export default function LogsPage() {
 
                 <div
                   style={{
-                    minHeight: "34px",
+                    height: "38px",
                     display: "flex",
-                    alignItems: "center",
+                    alignItems: "stretch",
                   }}
                 >
                   <Button onClick={resetFilters}>
