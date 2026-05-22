@@ -13,6 +13,7 @@ import {
   Select,
   Button,
   TextField,
+  Tooltip,
 } from "@shopify/polaris";
 
 type RedemptionStatus = "all" | "issued" | "used" | "expired";
@@ -81,6 +82,7 @@ export default function RedemptionsPage() {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<RedemptionStatus>("all");
   const [searchText, setSearchText] = useState("");
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [expireLoading, setExpireLoading] = useState(false);
   const [pageSize, setPageSize] = useState("20");
 
@@ -99,6 +101,23 @@ export default function RedemptionsPage() {
       console.error("Failed to fetch redemptions:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const copyText = async (value?: string | null, key?: string) => {
+    if (!value) return;
+
+    try {
+      await navigator.clipboard.writeText(value);
+
+      if (key) {
+        setCopiedKey(key);
+        window.setTimeout(() => {
+          setCopiedKey((currentKey) => currentKey === key ? null : currentKey);
+        }, 1200);
+      }
+    } catch (error) {
+      console.error("Failed to copy text:", error);
     }
   };
 
@@ -379,9 +398,35 @@ export default function RedemptionsPage() {
               position={index}
             >
               <IndexTable.Cell>
-                <Text as="span" variant="bodyMd" fontWeight="medium">
-                  {redemption.discountCode || redemption.id}
-                </Text>
+                <Tooltip
+                  content={
+                    copiedKey === `code-${redemption.id}`
+                      ? "コピーした"
+                      : "コピー"
+                  }
+                >
+                  <button
+                    type="button"
+                    onClick={() =>
+                      copyText(
+                        redemption.discountCode || redemption.id,
+                        `code-${redemption.id}`
+                      )
+                    }
+                    style={{
+                      padding: 0,
+                      border: "none",
+                      background: "transparent",
+                      cursor: "pointer",
+                      color: "inherit",
+                      font: "inherit",
+                    }}
+                  >
+                    <Text as="span" variant="bodyMd" fontWeight="medium">
+                      {redemption.discountCode || redemption.id}
+                    </Text>
+                  </button>
+                </Tooltip>
               </IndexTable.Cell>
 
               <IndexTable.Cell>
@@ -389,7 +434,37 @@ export default function RedemptionsPage() {
               </IndexTable.Cell>
 
               <IndexTable.Cell>
-                {redemption.customerId || "-"}
+                {redemption.customerId ? (
+                  <Tooltip
+                    content={
+                      copiedKey === `customer-${redemption.id}`
+                        ? "コピーした"
+                        : "コピー"
+                    }
+                  >
+                    <button
+                      type="button"
+                      onClick={() =>
+                        copyText(
+                          redemption.customerId,
+                          `customer-${redemption.id}`
+                        )
+                      }
+                      style={{
+                        padding: 0,
+                        border: "none",
+                        background: "transparent",
+                        cursor: "pointer",
+                        color: "inherit",
+                        font: "inherit",
+                      }}
+                    >
+                      {redemption.customerId}
+                    </button>
+                  </Tooltip>
+                ) : (
+                  "-"
+                )}
               </IndexTable.Cell>
 
               <IndexTable.Cell>
@@ -399,7 +474,34 @@ export default function RedemptionsPage() {
               </IndexTable.Cell>
 
               <IndexTable.Cell>
-                {redemption.orderId || "-"}
+                {redemption.orderId ? (
+                  <Tooltip
+                    content={
+                      copiedKey === `order-${redemption.id}`
+                        ? "コピーした"
+                        : "コピー"
+                    }
+                  >
+                    <button
+                      type="button"
+                      onClick={() =>
+                        copyText(redemption.orderId, `order-${redemption.id}`)
+                      }
+                      style={{
+                        padding: 0,
+                        border: "none",
+                        background: "transparent",
+                        cursor: "pointer",
+                        color: "inherit",
+                        font: "inherit",
+                      }}
+                    >
+                      {redemption.orderId}
+                    </button>
+                  </Tooltip>
+                ) : (
+                  "-"
+                )}
               </IndexTable.Cell>
 
               <IndexTable.Cell>
