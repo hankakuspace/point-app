@@ -1,6 +1,7 @@
 // src/app/api/cart-points/route.ts
 import { NextResponse } from "next/server";
 import { db } from "@/lib/firebaseAdmin";
+import { callShopifyAdminAPI } from "@/lib/shopify";
 
 function renderHtml(html: string) {
   return new NextResponse(html, {
@@ -9,6 +10,103 @@ function renderHtml(html: string) {
       "Cache-Control": "private, no-store",
     },
   });
+}
+
+function normalizeTag(value: unknown) {
+  return String(value ?? "").trim().toLowerCase();
+}
+
+function getProductNumericIdFromGid(gid: string) {
+  return gid.split("/").pop() || gid;
+}
+
+async function fetchProductTagsByIds(productIds: string[], shop?: string | null) {
+  const uniqueProductIds = Array.from(new Set(productIds.filter(Boolean)));
+
+  if (uniqueProductIds.length === 0) {
+    return new Map<string, string[]>();
+  }
+
+  const query = `
+    query ProductTags($ids: [ID!]!) {
+      nodes(ids: $ids) {
+        ... on Product {
+          id
+          tags
+        }
+      }
+    }
+  `;
+
+  const data = await callShopifyAdminAPI(
+    query,
+    {
+      ids: uniqueProductIds.map((productId) => `gid://shopify/Product/${productId}`),
+    },
+    shop || undefined
+  );
+
+  const tagsByProductId = new Map<string, string[]>();
+  const nodes = Array.isArray(data?.nodes) ? data.nodes : [];
+
+  for (const node of nodes) {
+    if (!node?.id) continue;
+
+    const productId = getProductNumericIdFromGid(String(node.id));
+    const tags = Array.isArray(node.tags) ? node.tags.map(normalizeTag) : [];
+
+    tagsByProductId.set(productId, tags);
+  }
+
+  return tagsByProductId;
+}
+
+async function areAllCartProductsExcluded({
+  productIds,
+  excludedTags,
+  shop,
+}: {
+  productIds: string[];
+  excludedTags: string[];
+  shop?: string | null;
+}) {
+  const uniqueProductIds = Array.from(new Set(productIds.filter(Boolean)));
+
+  if (uniqueProductIds.length === 0 || excludedTags.length === 0) {
+    return false;
+  }
+
+  const tagsByProductId = await fetchProductTagsByIds(uniqueProductIds, shop);
+
+  return uniqueProductIds.every((productId) => {
+    const productTags = tagsByProductId.get(productId) || [];
+
+    return productTags.some((tag) => excludedTags.includes(tag));
+  });
+}
+
+function renderPointUseUnavailableHtml() {
+  return renderHtml(`<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #202223; }
+    .box { border: 1px solid #fecaca; border-radius: 12px; padding: 14px; background: #fff7f7; }
+    .label { margin: 0 0 6px; font-size: 13px; color: #6d7175; }
+    .title { margin: 0 0 8px; font-size: 15px; font-weight: 700; color: #8e1f0b; }
+    .text { margin: 0; font-size: 13px; color: #6d7175; line-height: 1.6; }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <p class="label">ポイントMAN</p>
+    <p class="title">この商品はポイント利用対象外です</p>
+    <p class="text">カート内の商品はポイント利用の対象外です。ポイントを使わずにチェックアウトへお進みください。</p>
+  </div>
+</body>
+</html>`);
 }
 
 function renderLoginHtml() {
@@ -41,6 +139,10 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const shop = url.searchParams.get("shop") || "";
   const customerId = url.searchParams.get("logged_in_customer_id") || "";
+  const cartProductIds = (url.searchParams.get("cartProductIds") || "")
+    .split(",")
+    .map((productId) => productId.trim())
+    .filter(Boolean);
 
   if (!customerId) {
     return renderLoginHtml();
@@ -93,6 +195,20 @@ export async function GET(req: Request) {
       ? settings.maxUsePoints
       : 1000;
 
+  const excludedTags = Array.isArray(settings.excludedTags)
+    ? settings.excludedTags.map(normalizeTag).filter(Boolean)
+    : [];
+
+  const allCartProductsExcluded = await areAllCartProductsExcluded({
+    productIds: cartProductIds,
+    excludedTags,
+    shop,
+  });
+
+  if (allCartProductsExcluded) {
+    return renderPointUseUnavailableHtml();
+  }
+
   const maxAvailable = Math.min(maxUsePoints, points);
   const canUse = points >= minUsePoints;
   const rangeText = canUse
@@ -131,6 +247,7 @@ export async function GET(req: Request) {
       <input type="hidden" name="customerId" value="${customerId}" />
       <input type="hidden" name="email" value="${email}" />
       <input type="hidden" name="returnMode" value="cart" />
+      <input type="hidden" name="cartProductIds" value="${cartProductIds.join(",")}" />
 
       <label>
         利用ポイント数
