@@ -27,6 +27,7 @@ type RedemptionStatus =
 
 interface PointRedemption {
   id: string;
+  shop?: string | null;
   customerId?: string;
   email?: string;
   discountCode?: string;
@@ -84,6 +85,22 @@ function getShopifyDeactivatedBadge(redemption: PointRedemption) {
   return <Badge tone="attention">未確認</Badge>;
 }
 
+function getRedemptionsShop() {
+  if (typeof window === "undefined") {
+    return "";
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  const shop = params.get("shop") || "";
+
+  if (shop) {
+    sessionStorage.setItem("pointman-shop", shop);
+    return shop;
+  }
+
+  return sessionStorage.getItem("pointman-shop") || "";
+}
+
 export default function RedemptionsPage() {
   const [redemptions, setRedemptions] = useState<PointRedemption[]>([]);
   const [loading, setLoading] = useState(true);
@@ -99,9 +116,16 @@ export default function RedemptionsPage() {
     setLoading(true);
 
     try {
-      const res = await fetch("/api/admin/redemptions", {
-        cache: "no-store",
-      });
+      const shop = getRedemptionsShop();
+
+      const res = await fetch(
+        shop
+          ? `/api/admin/redemptions?shop=${encodeURIComponent(shop)}`
+          : "/api/admin/redemptions",
+        {
+          cache: "no-store",
+        }
+      );
 
       const data = await res.json();
 

@@ -1,14 +1,18 @@
 // src/app/api/admin/redemptions/route.ts
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/firebaseAdmin";
 
 export const runtime = "nodejs";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const snapshot = await db
-      .collection("point_redemptions")
-      .get();
+    const shop = req.nextUrl.searchParams.get("shop") || "";
+
+    const query = shop
+      ? db.collection("point_redemptions").where("shop", "==", shop)
+      : db.collection("point_redemptions");
+
+    const snapshot = await query.get();
 
     const redemptions = snapshot.docs
       .map((doc) => {
