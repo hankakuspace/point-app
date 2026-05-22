@@ -32,6 +32,7 @@ interface Log {
 export default function LogsPage() {
   const [logs, setLogs] = useState<Log[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hoveredCopyKey, setHoveredCopyKey] = useState<string | null>(null);
 
   // フィルタ
   const [searchText, setSearchText] = useState('');
@@ -543,18 +544,34 @@ export default function LogsPage() {
                           <button
                             type="button"
                             onClick={() => copyText(log.customerId)}
-                            title="顧客IDをコピー"
+                            onMouseEnter={() => setHoveredCopyKey(`customer-${log.id}`)}
+                            onMouseLeave={() => setHoveredCopyKey(null)}
+                            title="コピー"
                             style={{
                               border: "none",
                               background: "transparent",
                               padding: 0,
                               color: "#202223",
-                              cursor: "copy",
+                              cursor: "pointer",
                               font: "inherit",
                               textAlign: "left",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "6px",
                             }}
                           >
-                            {log.customerId}
+                            <span>{log.customerId}</span>
+                            {hoveredCopyKey === `customer-${log.id}` ? (
+                              <span
+                                style={{
+                                  color: "#6d7175",
+                                  fontSize: "12px",
+                                  fontWeight: 500,
+                                }}
+                              >
+                                コピー
+                              </span>
+                            ) : null}
                           </button>
                         </IndexTable.Cell>
 
@@ -607,18 +624,34 @@ export default function LogsPage() {
                             <button
                               type="button"
                               onClick={() => copyText(log.orderId)}
-                              title="注文IDをコピー"
+                              onMouseEnter={() => setHoveredCopyKey(`order-${log.id}`)}
+                              onMouseLeave={() => setHoveredCopyKey(null)}
+                              title="コピー"
                               style={{
                                 border: "none",
                                 background: "transparent",
                                 padding: 0,
                                 color: "#202223",
-                                cursor: "copy",
+                                cursor: "pointer",
                                 font: "inherit",
                                 textAlign: "left",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "6px",
                               }}
                             >
-                              {log.orderId}
+                              <span>{log.orderId}</span>
+                              {hoveredCopyKey === `order-${log.id}` ? (
+                                <span
+                                  style={{
+                                    color: "#6d7175",
+                                    fontSize: "12px",
+                                    fontWeight: 500,
+                                  }}
+                                >
+                                  コピー
+                                </span>
+                              ) : null}
                             </button>
                           ) : (
                             '-'
