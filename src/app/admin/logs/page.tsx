@@ -39,7 +39,6 @@ export default function LogsPage() {
   const [reason, setReason] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [filtersOpen, setFiltersOpen] = useState(false);
 
   // 一括付与
   const [bulkCustomerId, setBulkCustomerId] = useState('');
@@ -92,7 +91,6 @@ export default function LogsPage() {
     setReason('');
     setStartDate('');
     setEndDate('');
-    setFiltersOpen(false);
     setPage(0);
     setLoading(true);
 
@@ -214,28 +212,81 @@ export default function LogsPage() {
     ]);
 
   return (
-    <Page title="ポイント履歴管理" fullWidth>
+    <Page
+      title="ポイント履歴管理"
+      fullWidth
+      primaryAction={{
+        content: "CSV",
+        onAction: exportCSV,
+      }}
+      secondaryActions={[
+        {
+          content: "JSON",
+          onAction: exportJSON,
+        },
+      ]}
+    >
       <Layout>
         {/* フィルタ */}
         <Layout.Section>
           <Card sectioned>
             <div
               style={{
-                display: "flex",
-                flexWrap: "wrap",
+                display: "grid",
+                gridTemplateColumns:
+                  "minmax(260px, 2fr) minmax(120px, 0.8fr) minmax(140px, 1fr) minmax(140px, 1fr) minmax(140px, 1fr) auto auto",
                 gap: "12px",
                 alignItems: "end",
               }}
             >
-              <div style={{ flex: "1 1 320px", minWidth: "280px" }}>
-                <TextField
-                  label="検索"
-                  placeholder="顧客ID・注文ID・ログIDで検索"
-                  value={searchText}
-                  onChange={(value) => setSearchText(value)}
-                  autoComplete="off"
-                />
-              </div>
+              <TextField
+                label="検索"
+                placeholder="顧客ID・注文ID・ログIDで検索"
+                value={searchText}
+                onChange={(value) => setSearchText(value)}
+                autoComplete="off"
+              />
+
+              <Select
+                label="タイプ"
+                options={[
+                  { label: 'すべて', value: '' },
+                  { label: '付与', value: 'add' },
+                  { label: '利用', value: 'use' },
+                ]}
+                value={type}
+                onChange={(value) => setType(value)}
+              />
+
+              <Select
+                label="理由"
+                options={[
+                  { label: 'すべて', value: '' },
+                  { label: '購入付与', value: 'purchase' },
+                  { label: 'ポイント利用', value: 'point_use' },
+                  { label: '管理画面操作', value: 'admin_edit' },
+                  { label: '一括付与', value: 'bulk_add' },
+                  { label: 'キャンペーン', value: 'campaign' },
+                ]}
+                value={reason}
+                onChange={(value) => setReason(value)}
+              />
+
+              <TextField
+                label="開始日"
+                type="date"
+                value={startDate}
+                onChange={(value) => setStartDate(value)}
+                autoComplete="off"
+              />
+
+              <TextField
+                label="終了日"
+                type="date"
+                value={endDate}
+                onChange={(value) => setEndDate(value)}
+                autoComplete="off"
+              />
 
               <Button
                 onClick={fetchLogs}
@@ -247,73 +298,7 @@ export default function LogsPage() {
               <Button onClick={resetFilters}>
                 リセット
               </Button>
-
-              <Button onClick={() => setFiltersOpen((open) => !open)}>
-                {filtersOpen ? "フィルターを閉じる" : "フィルター"}
-              </Button>
-
-              <Button onClick={exportCSV}>
-                CSV
-              </Button>
-
-              <Button onClick={exportJSON}>
-                JSON
-              </Button>
             </div>
-
-            {filtersOpen ? (
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(4, minmax(160px, 1fr))",
-                  gap: "12px",
-                  marginTop: "16px",
-                  paddingTop: "16px",
-                  borderTop: "1px solid #e1e3e5",
-                }}
-              >
-                <Select
-                  label="タイプ"
-                  options={[
-                    { label: 'すべて', value: '' },
-                    { label: '付与', value: 'add' },
-                    { label: '利用', value: 'use' },
-                  ]}
-                  value={type}
-                  onChange={(value) => setType(value)}
-                />
-
-                <Select
-                  label="理由"
-                  options={[
-                    { label: 'すべて', value: '' },
-                    { label: '購入付与', value: 'purchase' },
-                    { label: 'ポイント利用', value: 'point_use' },
-                    { label: '管理画面操作', value: 'admin_edit' },
-                    { label: '一括付与', value: 'bulk_add' },
-                    { label: 'キャンペーン', value: 'campaign' },
-                  ]}
-                  value={reason}
-                  onChange={(value) => setReason(value)}
-                />
-
-                <TextField
-                  label="開始日"
-                  type="date"
-                  value={startDate}
-                  onChange={(value) => setStartDate(value)}
-                  autoComplete="off"
-                />
-
-                <TextField
-                  label="終了日"
-                  type="date"
-                  value={endDate}
-                  onChange={(value) => setEndDate(value)}
-                  autoComplete="off"
-                />
-              </div>
-            ) : null}
           </Card>
         </Layout.Section>
 
