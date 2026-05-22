@@ -80,6 +80,7 @@ export default function RedemptionsPage() {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<RedemptionStatus>("all");
   const [expireLoading, setExpireLoading] = useState(false);
+  const [pageSize, setPageSize] = useState("20");
 
   const fetchRedemptions = async () => {
     setLoading(true);
@@ -146,6 +147,11 @@ export default function RedemptionsPage() {
       (redemption) => redemption.status === statusFilter
     );
   }, [redemptions, statusFilter]);
+
+  const pageSizeNumber = Number(pageSize);
+  const visibleRedemptions = filteredRedemptions.slice(0, pageSizeNumber);
+  const pageStart = filteredRedemptions.length === 0 ? 0 : 1;
+  const pageEnd = Math.min(pageSizeNumber, filteredRedemptions.length);
 
   const summaryCounts = useMemo(() => {
     return redemptions.reduce(
@@ -291,12 +297,40 @@ export default function RedemptionsPage() {
 
         <Layout.Section>
           <Card>
-        <IndexTable
+            <div
+              style={{
+                padding: "16px 16px 12px",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                gap: "12px",
+              }}
+            >
+              <Text as="p" variant="bodySm" tone="subdued">
+                {pageStart}〜{pageEnd}件 / 全{filteredRedemptions.length}件
+              </Text>
+
+              <div style={{ width: "140px" }}>
+                <Select
+                  label=""
+                  labelHidden
+                  options={[
+                    { label: "20件", value: "20" },
+                    { label: "50件", value: "50" },
+                    { label: "100件", value: "100" },
+                  ]}
+                  value={pageSize}
+                  onChange={(value) => setPageSize(value)}
+                />
+              </div>
+            </div>
+
+            <IndexTable
           resourceName={{
             singular: "redemption",
             plural: "redemptions",
           }}
-          itemCount={filteredRedemptions.length}
+          itemCount={visibleRedemptions.length}
           selectable={false}
           headings={[
             { title: "コード" },
@@ -309,7 +343,7 @@ export default function RedemptionsPage() {
             { title: "最終状態日時" },
           ]}
         >
-          {filteredRedemptions.map((redemption, index) => (
+          {visibleRedemptions.map((redemption, index) => (
             <IndexTable.Row
               id={redemption.id}
               key={redemption.id}
