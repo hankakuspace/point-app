@@ -251,55 +251,76 @@ export default function RedemptionsPage() {
       <Layout>
         <Layout.Section>
           <Card>
-        <div
-          style={{
-            padding: "16px",
-            display: "grid",
-            gridTemplateColumns: "minmax(280px, 1fr) 220px auto",
-            gap: "12px",
-            alignItems: "end",
-          }}
-        >
-          <TextField
-            label="検索"
-            placeholder="コード・顧客ID・注文ID・メールで検索"
-            value={searchText}
-            onChange={(value) => setSearchText(value)}
-            autoComplete="off"
-          />
-
-          <Select
-            label="状態"
-            options={[
-              { label: "すべて", value: "all" },
-              { label: "未使用", value: "issued" },
-              { label: "使用済み", value: "used" },
-              { label: "期限切れ", value: "expired" },
-            ]}
-            value={statusFilter}
-            onChange={(value) =>
-              setStatusFilter(value as RedemptionStatus)
-            }
-          />
-
-          <div
-            style={{
-              display: "flex",
-              gap: "8px",
-              alignItems: "center",
-            }}
-          >
-            <Button size="large" onClick={fetchRedemptions}>再読み込み</Button>
-
-            <Button
-              size="large"
-              onClick={handleExpireIssuedCodes}
-              loading={expireLoading}
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                setSearchText(searchInput.trim());
+              }}
+              style={{
+                padding: "16px",
+                display: "grid",
+                gridTemplateColumns: "minmax(280px, 1fr) 220px auto",
+                gap: "12px",
+                alignItems: "end",
+              }}
             >
-              未使用コードを期限切れにする
-            </Button>
-          </div>
-        </div>
+              <TextField
+                label="検索"
+                placeholder="コード・顧客ID・注文ID・メールで検索"
+                value={searchInput}
+                onChange={(value) => setSearchInput(value)}
+                autoComplete="off"
+              />
+
+              <Select
+                label="状態"
+                options={[
+                  { label: "すべて", value: "all" },
+                  { label: "未使用", value: "issued" },
+                  { label: "使用済み", value: "used" },
+                  { label: "期限切れ", value: "expired" },
+                ]}
+                value={statusFilter}
+                onChange={(value) =>
+                  setStatusFilter(value as RedemptionStatus)
+                }
+              />
+
+              <div
+                style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: "8px",
+                  alignItems: "center",
+                }}
+              >
+                <Button size="large" submit>
+                  検索
+                </Button>
+
+                <Button
+                  size="large"
+                  onClick={() => {
+                    setSearchInput("");
+                    setSearchText("");
+                  }}
+                >
+                  リセット
+                </Button>
+
+                <Button size="large" onClick={fetchRedemptions}>
+                  再読み込み
+                </Button>
+
+                <Button
+                  size="large"
+                  onClick={handleExpireIssuedCodes}
+                  loading={expireLoading}
+                >
+                  未使用コードを期限切れにする
+                </Button>
+              </div>
+            </form>
           </Card>
         </Layout.Section>
 
