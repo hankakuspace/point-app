@@ -38,12 +38,17 @@ export async function GET(req: NextRequest) {
 
     const tokenJson = await tokenRes.json();
     const accessToken = tokenJson.access_token;
+    const scope = typeof tokenJson.scope === "string" ? tokenJson.scope : "";
     console.log("✅ Access token retrieved for", shop);
 
     // ✅ ② Firestore 保存（try/catch 保護付き）
     try {
       await db.collection("shops").doc(shop).set(
-        { accessToken, installedAt: new Date().toISOString() },
+        {
+          accessToken,
+          scope,
+          installedAt: new Date().toISOString(),
+        },
         { merge: true }
       );
       console.log(`✅ Firestore updated for ${shop}`);

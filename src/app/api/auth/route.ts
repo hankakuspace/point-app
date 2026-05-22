@@ -1,12 +1,21 @@
+// src/app/api/auth/route.ts
 import { NextRequest, NextResponse } from "next/server";
 
 const SHOPIFY_API_KEY = process.env.SHOPIFY_API_KEY!;
 const SHOPIFY_APP_URL = process.env.SHOPIFY_APP_URL!;
+
+// 🔑 アプリで使用するShopify OAuthスコープ
 const SCOPES = [
-  "read_products",
-  "write_products",
+  "read_all_orders",
+  "read_checkouts",
   "read_customers",
+  "read_discounts",
+  "read_orders",
+  "read_products",
+  "write_checkouts",
   "write_customers",
+  "write_discounts",
+  "write_orders",
 ];
 
 export async function GET(req: NextRequest) {
