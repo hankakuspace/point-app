@@ -93,7 +93,7 @@ export default function LogsPage() {
       log.type,
       log.points,
       log.orderId || '',
-      log.reason || '',
+      formatLogReason(log.reason),
       new Date(log.timestamp).toISOString(),
     ]);
     const csvContent = '\uFEFF' + [header, ...rows].map((r) => r.join(',')).join('\n');
@@ -117,6 +117,23 @@ export default function LogsPage() {
     a.download = 'point_logs.json';
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const formatLogReason = (reason?: string) => {
+    switch (reason) {
+      case 'purchase':
+        return '購入付与';
+      case 'point_use':
+        return 'ポイント利用';
+      case 'admin_edit':
+        return '管理画面操作';
+      case 'bulk_add':
+        return '一括付与';
+      case 'campaign':
+        return 'キャンペーン';
+      default:
+        return reason || '-';
+    }
   };
 
   // 一括付与処理
@@ -401,13 +418,19 @@ export default function LogsPage() {
                         </IndexTable.Cell>
 
                         <IndexTable.Cell>
-                          {log.reason === 'admin_edit' ? (
-                            <Badge tone="info">
-                              管理画面操作
-                            </Badge>
-                          ) : log.reason ? (
-                            <Badge>
-                              {log.reason}
+                          {log.reason ? (
+                            <Badge
+                              tone={
+                                log.reason === 'admin_edit'
+                                  ? 'info'
+                                  : log.reason === 'purchase'
+                                    ? 'success'
+                                    : log.reason === 'point_use'
+                                      ? 'attention'
+                                      : undefined
+                              }
+                            >
+                              {formatLogReason(log.reason)}
                             </Badge>
                           ) : (
                             '-'
