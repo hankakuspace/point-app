@@ -542,6 +542,7 @@ export default function RedemptionsPage() {
             { title: "ポイント" },
             { title: "注文ID" },
             { title: "Shopify無効化" },
+            { title: "エラー内容" },
             { title: "発行日時" },
             { title: "最終状態日時" },
           ]}
@@ -661,6 +662,10 @@ export default function RedemptionsPage() {
 
               <IndexTable.Cell>
                 {getShopifyDeactivatedBadge(redemption)}
+              </IndexTable.Cell>
+
+              <IndexTable.Cell>
+                {redemption.expireError || "-"}
               </IndexTable.Cell>
 
               <IndexTable.Cell>
