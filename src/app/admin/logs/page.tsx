@@ -35,6 +35,7 @@ export default function LogsPage() {
 
   // フィルタ
   const [customerId, setCustomerId] = useState('');
+  const [orderId, setOrderId] = useState('');
   const [type, setType] = useState('');
   const [reason, setReason] = useState('');
   const [startDate, setStartDate] = useState('');
@@ -69,6 +70,7 @@ export default function LogsPage() {
     try {
       const params = new URLSearchParams();
       if (customerId) params.append('customerId', customerId);
+      if (orderId) params.append('orderId', orderId);
       if (type) params.append('type', type);
       if (reason) params.append('reason', reason);
       if (startDate) params.append('startDate', startDate);
@@ -87,6 +89,7 @@ export default function LogsPage() {
 
   const resetFilters = async () => {
     setCustomerId('');
+    setOrderId('');
     setType('');
     setReason('');
     setStartDate('');
@@ -221,7 +224,7 @@ export default function LogsPage() {
               style={{
                 display: "grid",
                 gridTemplateColumns:
-                  "2fr 1fr 1fr 1fr 1fr auto",
+                  "2fr 1.4fr 1fr 1fr 1fr 1fr auto",
                 gap: "12px",
                 alignItems: "end",
               }}
@@ -230,6 +233,13 @@ export default function LogsPage() {
                 label="顧客ID"
                 value={customerId}
                 onChange={(v) => setCustomerId(v)}
+                autoComplete="off"
+              />
+
+              <TextField
+                label="注文ID"
+                value={orderId}
+                onChange={(v) => setOrderId(v)}
                 autoComplete="off"
               />
 
