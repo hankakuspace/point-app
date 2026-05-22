@@ -7,6 +7,7 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const customerId = searchParams.get('customerId') || '';
+    const search = searchParams.get('search') || '';
     const type = searchParams.get('type') || '';
     const reason = searchParams.get('reason') || '';
     const orderId = searchParams.get('orderId') || '';
@@ -52,6 +53,22 @@ export async function GET(req: NextRequest) {
           : d.timestamp || null,
       };
     });
+
+    const searchKeyword = search.trim().toLowerCase();
+
+    if (searchKeyword) {
+      data = data.filter((log) => {
+        const customer = String(log.customerId || '').toLowerCase();
+        const order = String(log.orderId || '').toLowerCase();
+        const id = String(log.id || '').toLowerCase();
+
+        return (
+          customer.includes(searchKeyword) ||
+          order.includes(searchKeyword) ||
+          id.includes(searchKeyword)
+        );
+      });
+    }
 
     // サーバー側で降順ソート保証
     data = data.sort(

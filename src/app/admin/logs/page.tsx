@@ -34,12 +34,12 @@ export default function LogsPage() {
   const [loading, setLoading] = useState(true);
 
   // フィルタ
-  const [customerId, setCustomerId] = useState('');
-  const [orderId, setOrderId] = useState('');
+  const [searchText, setSearchText] = useState('');
   const [type, setType] = useState('');
   const [reason, setReason] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   // 一括付与
   const [bulkCustomerId, setBulkCustomerId] = useState('');
@@ -69,8 +69,7 @@ export default function LogsPage() {
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      if (customerId) params.append('customerId', customerId);
-      if (orderId) params.append('orderId', orderId);
+      if (searchText) params.append('search', searchText);
       if (type) params.append('type', type);
       if (reason) params.append('reason', reason);
       if (startDate) params.append('startDate', startDate);
@@ -88,12 +87,12 @@ export default function LogsPage() {
   };
 
   const resetFilters = async () => {
-    setCustomerId('');
-    setOrderId('');
+    setSearchText('');
     setType('');
     setReason('');
     setStartDate('');
     setEndDate('');
+    setFiltersOpen(false);
     setPage(0);
     setLoading(true);
 
@@ -222,98 +221,99 @@ export default function LogsPage() {
           <Card sectioned>
             <div
               style={{
-                display: "grid",
-                gridTemplateColumns:
-                  "repeat(5, minmax(140px, 1fr))",
+                display: "flex",
+                flexWrap: "wrap",
                 gap: "12px",
                 alignItems: "end",
               }}
             >
-              <TextField
-                label="顧客ID"
-                value={customerId}
-                onChange={(v) => setCustomerId(v)}
-                autoComplete="off"
-              />
+              <div style={{ flex: "1 1 320px", minWidth: "280px" }}>
+                <TextField
+                  label="検索"
+                  placeholder="顧客ID・注文ID・ログIDで検索"
+                  value={searchText}
+                  onChange={(value) => setSearchText(value)}
+                  autoComplete="off"
+                />
+              </div>
 
-              <TextField
-                label="注文ID"
-                value={orderId}
-                onChange={(v) => setOrderId(v)}
-                autoComplete="off"
-              />
+              <Button
+                onClick={fetchLogs}
+                variant="primary"
+              >
+                検索
+              </Button>
 
-              <Select
-                label="タイプ"
-                options={[
-                  { label: 'すべて', value: '' },
-                  { label: '付与', value: 'add' },
-                  { label: '利用', value: 'use' },
-                ]}
-                value={type}
-                onChange={(v) => setType(v)}
-              />
+              <Button onClick={resetFilters}>
+                リセット
+              </Button>
 
-              <Select
-                label="理由"
-                options={[
-                  { label: 'すべて', value: '' },
-                  { label: '購入付与', value: 'purchase' },
-                  { label: 'ポイント利用', value: 'point_use' },
-                  { label: '管理画面操作', value: 'admin_edit' },
-                  { label: '一括付与', value: 'bulk_add' },
-                  { label: 'キャンペーン', value: 'campaign' },
-                ]}
-                value={reason}
-                onChange={(v) => setReason(v)}
-              />
+              <Button onClick={() => setFiltersOpen((open) => !open)}>
+                {filtersOpen ? "フィルターを閉じる" : "フィルター"}
+              </Button>
 
-              <TextField
-                label="開始日"
-                type="date"
-                value={startDate}
-                onChange={(v) => setStartDate(v)}
-                autoComplete="off"
-              />
+              <Button onClick={exportCSV}>
+                CSV
+              </Button>
 
-              <TextField
-                label="終了日"
-                type="date"
-                value={endDate}
-                onChange={(v) => setEndDate(v)}
-                autoComplete="off"
-              />
+              <Button onClick={exportJSON}>
+                JSON
+              </Button>
+            </div>
 
+            {filtersOpen ? (
               <div
                 style={{
-                  gridColumn: "2 / -1",
-                  display: "flex",
-                  gap: "8px",
-                  alignItems: "end",
-                  paddingBottom: "2px",
-                  whiteSpace: "nowrap",
+                  display: "grid",
+                  gridTemplateColumns: "repeat(4, minmax(160px, 1fr))",
+                  gap: "12px",
+                  marginTop: "16px",
+                  paddingTop: "16px",
+                  borderTop: "1px solid #e1e3e5",
                 }}
               >
-                <Button
-                  onClick={fetchLogs}
-                  variant="primary"
-                >
-                  検索
-                </Button>
+                <Select
+                  label="タイプ"
+                  options={[
+                    { label: 'すべて', value: '' },
+                    { label: '付与', value: 'add' },
+                    { label: '利用', value: 'use' },
+                  ]}
+                  value={type}
+                  onChange={(value) => setType(value)}
+                />
 
-                <Button onClick={resetFilters}>
-                  リセット
-                </Button>
+                <Select
+                  label="理由"
+                  options={[
+                    { label: 'すべて', value: '' },
+                    { label: '購入付与', value: 'purchase' },
+                    { label: 'ポイント利用', value: 'point_use' },
+                    { label: '管理画面操作', value: 'admin_edit' },
+                    { label: '一括付与', value: 'bulk_add' },
+                    { label: 'キャンペーン', value: 'campaign' },
+                  ]}
+                  value={reason}
+                  onChange={(value) => setReason(value)}
+                />
 
-                <Button onClick={exportCSV}>
-                  CSV
-                </Button>
+                <TextField
+                  label="開始日"
+                  type="date"
+                  value={startDate}
+                  onChange={(value) => setStartDate(value)}
+                  autoComplete="off"
+                />
 
-                <Button onClick={exportJSON}>
-                  JSON
-                </Button>
+                <TextField
+                  label="終了日"
+                  type="date"
+                  value={endDate}
+                  onChange={(value) => setEndDate(value)}
+                  autoComplete="off"
+                />
               </div>
-            </div>
+            ) : null}
           </Card>
         </Layout.Section>
 
