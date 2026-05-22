@@ -565,23 +565,16 @@ export default function LogsPage() {
                         </IndexTable.Cell>
 
                         <IndexTable.Cell>
-                          <div
-                            style={{
-                              display: "flex",
-                              justifyContent: "flex-end",
-                            }}
+                          <Badge
+                            tone={
+                              log.type === 'add'
+                                ? 'success'
+                                : 'attention'
+                            }
                           >
-                            <Badge
-                              tone={
-                                log.type === 'add'
-                                  ? 'success'
-                                  : 'attention'
-                              }
-                            >
-                              {log.type === 'use' ? '-' : '+'}
-                              {log.points} pt
-                            </Badge>
-                          </div>
+                            {log.type === 'use' ? '-' : '+'}
+                            {log.points} pt
+                          </Badge>
                         </IndexTable.Cell>
 
                         <IndexTable.Cell>
