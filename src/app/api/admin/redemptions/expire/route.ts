@@ -93,6 +93,9 @@ export async function POST(req: Request) {
   try {
     const body = await req.json().catch(() => ({}));
 
+    const retryFailed =
+      typeof body.retryFailed === "boolean" ? body.retryFailed : false;
+
     const expireMinutes =
       typeof body.expireMinutes === "number" &&
       Number.isFinite(body.expireMinutes) &&
@@ -107,30 +110,36 @@ export async function POST(req: Request) {
 
     const snapshot = await db
       .collection("point_redemptions")
-      .where("status", "==", "issued")
+      .where("status", "==", retryFailed ? "expired" : "issued")
       .get();
 
-    const expiredTargets = snapshot.docs.filter((doc) => {
-      const data = doc.data();
-      const createdAt = data.createdAt;
+    const expiredTargets = retryFailed
+      ? snapshot.docs.filter((doc) => {
+          const data = doc.data();
 
-      if (!createdAt) {
-        return false;
-      }
+          return data.shopifyDeactivated === false;
+        })
+      : snapshot.docs.filter((doc) => {
+          const data = doc.data();
+          const createdAt = data.createdAt;
 
-      const createdDate =
-        typeof createdAt === "string"
-          ? new Date(createdAt)
-          : createdAt?.toDate
-            ? createdAt.toDate()
-            : null;
+          if (!createdAt) {
+            return false;
+          }
 
-      if (!createdDate || Number.isNaN(createdDate.getTime())) {
-        return false;
-      }
+          const createdDate =
+            typeof createdAt === "string"
+              ? new Date(createdAt)
+              : createdAt?.toDate
+                ? createdAt.toDate()
+                : null;
 
-      return createdDate <= threshold;
-    });
+          if (!createdDate || Number.isNaN(createdDate.getTime())) {
+            return false;
+          }
+
+          return createdDate <= threshold;
+        });
 
     if (expiredTargets.length === 0) {
       return NextResponse.json({
@@ -161,8 +170,7 @@ export async function POST(req: Request) {
         );
 
         await doc.ref.update({
-          status: "expired",
-          expiredAt,
+          ...(retryFailed ? {} : { status: "expired", expiredAt }),
           updatedAt: expiredAt,
           shopifyDeactivated: deactivateResult.shopifyDeactivated,
           discountNodeId:
@@ -179,8 +187,7 @@ export async function POST(req: Request) {
         const errorMessage = (error as Error).message;
 
         await doc.ref.update({
-          status: "expired",
-          expiredAt,
+          ...(retryFailed ? {} : { status: "expired", expiredAt }),
           updatedAt: expiredAt,
           shopifyDeactivated: false,
           expireError: errorMessage,
@@ -198,6 +205,7 @@ export async function POST(req: Request) {
       success: true,
       expiredCount: expiredTargets.length,
       expireMinutes,
+      retryFailed,
       expiredIds: expiredTargets.map((doc) => doc.id),
       results,
     });
