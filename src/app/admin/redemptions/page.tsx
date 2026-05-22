@@ -391,8 +391,6 @@ export default function RedemptionsPage() {
                   { label: "期限切れ", value: "expired" },
                   { label: "Shopify未完了", value: "shopify_pending" },
                   { label: "エラーあり", value: "expire_error" },
-                  { label: "Shopify未完了", value: "shopify_pending" },
-                  { label: "エラーあり", value: "expire_error" },
                 ]}
                 value={statusFilter}
                 onChange={(value) => {
