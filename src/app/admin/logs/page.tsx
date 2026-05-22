@@ -281,7 +281,7 @@ export default function LogsPage() {
                 style={{
                   flex: "0 1 160px",
                   minWidth: "145px",
-                  paddingTop: "1px",
+                  paddingTop: "4px",
                 }}
               >
                 <TextField
@@ -297,7 +297,7 @@ export default function LogsPage() {
                 style={{
                   flex: "0 1 160px",
                   minWidth: "145px",
-                  paddingTop: "1px",
+                  paddingTop: "4px",
                 }}
               >
                 <TextField
