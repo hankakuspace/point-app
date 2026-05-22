@@ -359,7 +359,7 @@ export async function POST(req: Request) {
       }
     }
 
-    if (addPoints <= 0) {
+    if (addPoints <= 0 && redemptionPoints <= 0) {
       console.log("Webhook skipped: calculated points are zero", {
         orderId,
         totalPrice,
@@ -382,10 +382,12 @@ export async function POST(req: Request) {
     const pointLogRef = db.collection("point_logs").doc(`purchase_${orderId}`);
 
     await db.runTransaction(async (transaction) => {
-      const pointLogSnap = await transaction.get(pointLogRef);
+      if (addPoints > 0) {
+        const pointLogSnap = await transaction.get(pointLogRef);
 
-      if (pointLogSnap.exists) {
-        throw new Error("POINT_ALREADY_GRANTED");
+        if (pointLogSnap.exists) {
+          throw new Error("POINT_ALREADY_GRANTED");
+        }
       }
 
       let latestRedemptionSnap:
@@ -411,25 +413,27 @@ export async function POST(req: Request) {
         updatedAt: now,
       });
 
-      transaction.set(pointLogRef, {
-        customerDocId: customerDoc!.id,
-        customerId: customerId || null,
-        type: "add",
-        points: addPoints,
-        orderId,
-        reason: "purchase",
-        email,
-        totalPrice,
-        subtotalPrice,
-        calculationBase,
-        includeShipping,
-        pointRate,
-        excludedTags,
-        excludedLineItemsSubtotal,
-        eligibleLineItemsSubtotal,
-        excludedProductIds,
-        timestamp: now,
-      });
+      if (addPoints > 0) {
+        transaction.set(pointLogRef, {
+          customerDocId: customerDoc!.id,
+          customerId: customerId || null,
+          type: "add",
+          points: addPoints,
+          orderId,
+          reason: "purchase",
+          email,
+          totalPrice,
+          subtotalPrice,
+          calculationBase,
+          includeShipping,
+          pointRate,
+          excludedTags,
+          excludedLineItemsSubtotal,
+          eligibleLineItemsSubtotal,
+          excludedProductIds,
+          timestamp: now,
+        });
+      }
 
       if (redemptionRef && latestRedemptionSnap?.exists && redemptionPoints > 0) {
         if (latestRedemption.status === "issued") {
