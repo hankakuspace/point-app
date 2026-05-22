@@ -4,6 +4,7 @@
 import { useEffect, useState } from "react";
 import {
   Page,
+  Layout,
   Card,
   IndexTable,
   Text,
@@ -39,12 +40,108 @@ interface Customer {
 
 type BulkOperation = "add" | "use";
 
+type LatestLogMeta = {
+  label: string;
+  dotColor: string;
+};
+
+function getLatestLogMeta(reason?: string): LatestLogMeta {
+  switch (reason) {
+    case "purchase":
+      return {
+        label: "購入",
+        dotColor: "#86efac",
+      };
+
+    case "admin_add":
+    case "admin_edit":
+      return {
+        label: "手動",
+        dotColor: "#93c5fd",
+      };
+
+    case "admin_use":
+    case "point_use":
+      return {
+        label: "利用",
+        dotColor: "#f9a8d4",
+      };
+
+    case "campaign":
+      return {
+        label: "特典",
+        dotColor: "#c4b5fd",
+      };
+
+    case "migration":
+      return {
+        label: "移行",
+        dotColor: "#fde68a",
+      };
+
+    case "adjustment":
+      return {
+        label: "調整",
+        dotColor: "#d1d5db",
+      };
+
+    case "expired":
+      return {
+        label: "失効",
+        dotColor: "#d1d5db",
+      };
+
+    case "refund_cancel":
+      return {
+        label: "取消",
+        dotColor: "#fdba74",
+      };
+
+    default:
+      return {
+        label: "履歴",
+        dotColor: "#d1d5db",
+      };
+  }
+}
+
+function formatShortDate(value: any) {
+  if (!value) return "-";
+
+  try {
+    const date =
+      typeof value === "string"
+        ? new Date(value)
+        : value?.seconds
+          ? new Date(value.seconds * 1000)
+          : null;
+
+    if (!date || Number.isNaN(date.getTime())) {
+      return "-";
+    }
+
+    return `${date.getMonth() + 1}/${date.getDate()} ${date
+      .getHours()
+      .toString()
+      .padStart(2, "0")}:${date
+      .getMinutes()
+      .toString()
+      .padStart(2, "0")}`;
+  } catch {
+    return "-";
+  }
+}
+
+
+
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [toastActive, setToastActive] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
+
+  const [searchQuery, setSearchQuery] = useState("");
 
   const [bulkModalOpen, setBulkModalOpen] = useState(false);
   const [bulkOperation, setBulkOperation] = useState<BulkOperation>("add");
@@ -55,11 +152,29 @@ export default function CustomersPage() {
   const [shopDomain, setShopDomain] = useState("");
   const [syncLoading, setSyncLoading] = useState(false);
 
+  const filteredCustomers = customers.filter((customer) => {
+    const keyword = searchQuery.trim().toLowerCase();
+
+    if (!keyword) {
+      return true;
+    }
+
+    return [
+      customer.id,
+      customer.name,
+      customer.email,
+    ]
+      .filter(Boolean)
+      .some((value) =>
+        String(value).toLowerCase().includes(keyword)
+      );
+  });
+
   const {
     selectedResources,
     allResourcesSelected,
     handleSelectionChange,
-  } = useIndexResourceState(customers);
+  } = useIndexResourceState(filteredCustomers);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -252,7 +367,8 @@ export default function CustomersPage() {
   return (
     <Page
       title="顧客管理"
-      subtitle={`登録顧客数: ${customers.length}件`}
+      subtitle={`登録顧客数: ${customers.length}件 / 表示: ${filteredCustomers.length}件`}
+      fullWidth
     >
       {toastActive && (
         <Toast
@@ -317,39 +433,72 @@ export default function CustomersPage() {
         </Modal.Section>
       </Modal>
 
-      <Card>
-        <div
-          style={{
-            padding: "12px 16px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: "12px",
-          }}
-        >
-          <div>
-            <Text as="p" variant="bodyMd" fontWeight="medium">
-              Shopify顧客同期
-            </Text>
-            <Text as="p" variant="bodySm" tone="subdued">
-              Shopifyの顧客一覧をポイントMANへ取り込みます。既存ポイントは上書きしません。
-            </Text>
+      <Layout>
+        <Layout.Section>
+          <div
+            style={{
+              display: "grid",
+          gridTemplateColumns: "minmax(0, 1.3fr) minmax(360px, 1fr)",
+          gap: "12px",
+          alignItems: "stretch",
+        }}
+      >
+        <Card>
+          <div style={{ padding: "12px 16px" }}>
+            <TextField
+              label="顧客検索"
+              value={searchQuery}
+              onChange={(value) => setSearchQuery(value)}
+              autoComplete="off"
+              placeholder="ID・名前・メールで検索"
+              clearButton
+              onClearButtonClick={() => setSearchQuery("")}
+            />
           </div>
+        </Card>
 
-          <Button
-            onClick={handleSyncShopifyCustomers}
-            loading={syncLoading}
+        <Card>
+          <div
+            style={{
+              padding: "12px 16px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "12px",
+              height: "100%",
+            }}
           >
-            Shopify顧客同期
-          </Button>
-        </div>
-      </Card>
+            <div>
+              <Text as="p" variant="bodyMd" fontWeight="medium">
+                Shopify顧客同期
+              </Text>
+              <Text as="p" variant="bodySm" tone="subdued">
+                Shopifyの顧客一覧を取り込みます。既存ポイントは上書きしません。
+              </Text>
+            </div>
 
-      <div style={{ height: "12px" }} />
+            <div
+              style={{
+                flexShrink: 0,
+                minWidth: "96px",
+              }}
+            >
+              <Button
+                onClick={handleSyncShopifyCustomers}
+                loading={syncLoading}
+                fullWidth
+              >
+                同期する
+              </Button>
+            </div>
+          </div>
+        </Card>
+          </div>
+        </Layout.Section>
 
-      {selectedResources.length > 0 && (
-        <>
-          <Card>
+        {selectedResources.length > 0 && (
+          <Layout.Section>
+            <Card>
             <div
               style={{
                 padding: "12px 16px",
@@ -370,19 +519,18 @@ export default function CustomersPage() {
                 選択顧客にポイント操作
               </Button>
             </div>
-          </Card>
+            </Card>
+          </Layout.Section>
+        )}
 
-          <div style={{ height: "12px" }} />
-        </>
-      )}
-
-      <Card>
+        <Layout.Section>
+          <Card>
         <IndexTable
           resourceName={{
             singular: "customer",
             plural: "customers",
           }}
-          itemCount={customers.length}
+          itemCount={filteredCustomers.length}
           selectedItemsCount={
             allResourcesSelected ? "All" : selectedResources.length
           }
@@ -393,10 +541,9 @@ export default function CustomersPage() {
             { title: "メール" },
             { title: "ポイント" },
             { title: "最新履歴" },
-            { title: "登録日" },
           ]}
         >
-          {customers.map((customer, index) => (
+          {filteredCustomers.map((customer, index) => (
             <IndexTable.Row
               id={customer.id}
               key={customer.id}
@@ -425,22 +572,69 @@ export default function CustomersPage() {
 
               <IndexTable.Cell>
                 {customer.latestPointLog ? (
-                  <div style={{ display: "grid", gap: "4px" }}>
-                    <Badge
-                      tone={
-                        customer.latestPointLog.type === "use"
-                          ? "critical"
-                          : "success"
-                      }
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    <span
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        width: "fit-content",
+                        padding: "2px 8px",
+                        borderRadius: "999px",
+                        background:
+                          customer.latestPointLog.type === "use"
+                            ? "#fde2e1"
+                            : "#d1fadf",
+                        color:
+                          customer.latestPointLog.type === "use"
+                            ? "#8e1f0b"
+                            : "#0c5132",
+                        fontSize: "12px",
+                        fontWeight: 600,
+                        lineHeight: "18px",
+                        whiteSpace: "nowrap",
+                      }}
                     >
                       {customer.latestPointLog.type === "use" ? "-" : "+"}
                       {customer.latestPointLog.points || 0} pt
-                    </Badge>
-                    <Text as="p" variant="bodySm" tone="subdued">
-                      {formatPointLogReason(customer.latestPointLog.reason)}
-                    </Text>
-                    <Text as="p" variant="bodySm" tone="subdued">
-                      {formatDate(customer.latestPointLog.timestamp)}
+                    </span>
+
+                    <span
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "5px",
+                      }}
+                    >
+                      <span
+                        aria-hidden="true"
+                        style={{
+                          width: "8px",
+                          height: "8px",
+                          borderRadius: "999px",
+                          background: getLatestLogMeta(
+                            customer.latestPointLog.reason
+                          ).dotColor,
+                          flexShrink: 0,
+                        }}
+                      />
+
+                      <Text as="span" variant="bodySm">
+                        {getLatestLogMeta(
+                          customer.latestPointLog.reason
+                        ).label}
+                      </Text>
+                    </span>
+
+                    <Text as="span" variant="bodySm" tone="subdued">
+                      {formatShortDate(customer.latestPointLog.timestamp)}
                     </Text>
                   </div>
                 ) : (
@@ -448,14 +642,13 @@ export default function CustomersPage() {
                 )}
               </IndexTable.Cell>
 
-              <IndexTable.Cell>
-                {formatDate(customer.createdAt)}
-              </IndexTable.Cell>
 
             </IndexTable.Row>
           ))}
         </IndexTable>
-      </Card>
+          </Card>
+        </Layout.Section>
+      </Layout>
     </Page>
   );
 }
