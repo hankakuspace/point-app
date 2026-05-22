@@ -22,12 +22,29 @@ import {
 
 interface Log {
   id: string;
+  shop?: string | null;
   customerId: string;
   type: 'add' | 'use';
   points: number;
   orderId?: string;
   reason?: string;
   timestamp: string;
+}
+
+function getLogsShop() {
+  if (typeof window === 'undefined') {
+    return '';
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  const shop = params.get('shop') || '';
+
+  if (shop) {
+    sessionStorage.setItem('pointman-shop', shop);
+    return shop;
+  }
+
+  return sessionStorage.getItem('pointman-shop') || '';
 }
 
 export default function LogsPage() {
@@ -70,6 +87,8 @@ export default function LogsPage() {
     setLoading(true);
     try {
       const params = new URLSearchParams();
+      const shop = getLogsShop();
+      if (shop) params.append('shop', shop);
       if (searchText) params.append('search', searchText);
       if (type) params.append('type', type);
       if (reason) params.append('reason', reason);
@@ -97,7 +116,12 @@ export default function LogsPage() {
     setLoading(true);
 
     try {
-      const res = await fetch('/api/logs');
+      const params = new URLSearchParams();
+      const shop = getLogsShop();
+      if (shop) params.append('shop', shop);
+
+      const query = params.toString();
+      const res = await fetch(query ? `/api/logs?${query}` : '/api/logs');
       const data = await res.json();
       setLogs(data.logs || []);
     } catch (error) {

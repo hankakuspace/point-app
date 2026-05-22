@@ -6,6 +6,7 @@ import admin from 'firebase-admin';
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
+    const shop = searchParams.get('shop') || '';
     const customerId = searchParams.get('customerId') || '';
     const search = searchParams.get('search') || '';
     const type = searchParams.get('type') || '';
@@ -16,6 +17,10 @@ export async function GET(req: NextRequest) {
 
     let queryRef: FirebaseFirestore.Query = db
       .collection('point_logs');
+
+    if (shop) {
+      queryRef = queryRef.where('shop', '==', shop);
+    }
 
     if (customerId) {
       queryRef = queryRef.where('customerId', '==', customerId);
