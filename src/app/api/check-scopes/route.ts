@@ -1,9 +1,16 @@
+// src/app/api/check-scopes/route.ts
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {
-  const shop = "pointman-dev.myshopify.com"; // 開発ストア
-  const accessToken = process.env.SHOPIFY_ACCESS_TOKEN || ""; 
-  // ↑ 最新のアクセストークンを Firestore に保存しているなら、そこから取得するように修正してもOK
+  const shop = req.nextUrl.searchParams.get("shop") || "";
+  const accessToken = process.env.SHOPIFY_ACCESS_TOKEN || "";
+
+  if (!shop) {
+    return NextResponse.json(
+      { ok: false, error: "Missing shop" },
+      { status: 400 }
+    );
+  }
 
   if (!accessToken) {
     return NextResponse.json(
@@ -27,6 +34,7 @@ export async function GET(req: NextRequest) {
     if (!response.ok) {
       const error = await response.text();
       console.error("❌ Shopify API error:", error);
+
       return NextResponse.json(
         { ok: false, error },
         { status: response.status }
@@ -34,11 +42,11 @@ export async function GET(req: NextRequest) {
     }
 
     const data = await response.json();
-    console.log("✅ Current access scopes:", data);
 
-    return NextResponse.json({ ok: true, scopes: data });
+    return NextResponse.json({ ok: true, shop, scopes: data });
   } catch (err: any) {
     console.error("❌ Error checking access scopes:", err);
+
     return NextResponse.json(
       { ok: false, error: err.message },
       { status: 500 }
