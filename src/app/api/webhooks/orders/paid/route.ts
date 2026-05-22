@@ -2,6 +2,7 @@
 import crypto from "crypto";
 import { NextResponse } from "next/server";
 import { db } from "@/lib/firebaseAdmin";
+import { callShopifyAdminAPI } from "@/lib/shopify";
 
 type ShopifyOrderPaidPayload = {
   id?: number | string;
@@ -13,6 +14,13 @@ type ShopifyOrderPaidPayload = {
     code?: string;
     amount?: string;
     type?: string;
+  }>;
+  line_items?: Array<{
+    product_id?: number | string | null;
+    price?: string;
+    quantity?: number | string;
+    total_discount?: string;
+    pre_tax_price?: string;
   }>;
   customer?: {
     id?: number | string;
@@ -42,6 +50,75 @@ function verifyShopifyWebhook(rawBody: string, hmacHeader: string | null) {
   return crypto.timingSafeEqual(digestBuffer, hmacBuffer);
 }
 
+function normalizeTag(value: unknown) {
+  return String(value ?? "").trim().toLowerCase();
+}
+
+function parsePrice(value: unknown) {
+  const parsed = Number.parseFloat(String(value ?? "0"));
+
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function calculateLineItemSubtotal(lineItem: NonNullable<ShopifyOrderPaidPayload["line_items"]>[number]) {
+  const preTaxPrice = parsePrice(lineItem.pre_tax_price);
+
+  if (preTaxPrice > 0) {
+    return preTaxPrice;
+  }
+
+  const price = parsePrice(lineItem.price);
+  const quantity = parsePrice(lineItem.quantity || 1);
+  const totalDiscount = parsePrice(lineItem.total_discount);
+
+  return Math.max(price * quantity - totalDiscount, 0);
+}
+
+function getProductNumericIdFromGid(gid: string) {
+  return gid.split("/").pop() || gid;
+}
+
+async function fetchProductTagsByIds(productIds: string[], shop?: string | null) {
+  const uniqueProductIds = Array.from(new Set(productIds.filter(Boolean)));
+
+  if (uniqueProductIds.length === 0) {
+    return new Map<string, string[]>();
+  }
+
+  const query = `
+    query ProductTags($ids: [ID!]!) {
+      nodes(ids: $ids) {
+        ... on Product {
+          id
+          tags
+        }
+      }
+    }
+  `;
+
+  const data = await callShopifyAdminAPI(
+    query,
+    {
+      ids: uniqueProductIds.map((productId) => `gid://shopify/Product/${productId}`),
+    },
+    shop || undefined
+  );
+
+  const tagsByProductId = new Map<string, string[]>();
+  const nodes = Array.isArray(data?.nodes) ? data.nodes : [];
+
+  for (const node of nodes) {
+    if (!node?.id) continue;
+
+    const productId = getProductNumericIdFromGid(String(node.id));
+    const tags = Array.isArray(node.tags) ? node.tags.map(normalizeTag) : [];
+
+    tagsByProductId.set(productId, tags);
+  }
+
+  return tagsByProductId;
+}
+
 
 export async function POST(req: Request) {
   try {
@@ -69,6 +146,10 @@ export async function POST(req: Request) {
     const financialStatus = String(payload.financial_status ?? "")
       .trim()
       .toLowerCase();
+    const shopDomain = String(req.headers.get("x-shopify-shop-domain") ?? "")
+      .trim()
+      .toLowerCase();
+    const lineItems = Array.isArray(payload.line_items) ? payload.line_items : [];
 
     const discountCodes = Array.isArray(payload.discount_codes)
       ? payload.discount_codes
@@ -194,11 +275,60 @@ export async function POST(req: Request) {
         : 0.03;
 
     const includeShipping = Boolean(settings?.includeShipping);
+    const excludedTags = Array.isArray(settings?.excludedTags)
+      ? settings.excludedTags.map(normalizeTag).filter(Boolean)
+      : [];
 
-    const calculationBase =
+    let calculationBase =
       includeShipping || !Number.isFinite(subtotalPrice) || subtotalPrice <= 0
         ? totalPrice
         : subtotalPrice;
+    let excludedLineItemsSubtotal = 0;
+    let eligibleLineItemsSubtotal: number | null = null;
+    let excludedProductIds: string[] = [];
+
+    if (excludedTags.length > 0 && lineItems.length > 0) {
+      const productIds = lineItems
+        .map((lineItem) => String(lineItem.product_id ?? "").trim())
+        .filter(Boolean);
+
+      const productTagsById = await fetchProductTagsByIds(productIds, shopDomain);
+
+      let eligibleSubtotal = 0;
+      let excludedSubtotal = 0;
+      const excludedProductIdSet = new Set<string>();
+
+      for (const lineItem of lineItems) {
+        const productId = String(lineItem.product_id ?? "").trim();
+        const lineItemSubtotal = calculateLineItemSubtotal(lineItem);
+        const productTags = productTagsById.get(productId) || [];
+        const isExcluded = productTags.some((tag) => excludedTags.includes(tag));
+
+        if (isExcluded) {
+          excludedSubtotal += lineItemSubtotal;
+
+          if (productId) {
+            excludedProductIdSet.add(productId);
+          }
+        } else {
+          eligibleSubtotal += lineItemSubtotal;
+        }
+      }
+
+      const shippingAmount =
+        includeShipping &&
+        Number.isFinite(totalPrice) &&
+        Number.isFinite(subtotalPrice) &&
+        totalPrice > subtotalPrice &&
+        eligibleSubtotal > 0
+          ? totalPrice - subtotalPrice
+          : 0;
+
+      eligibleLineItemsSubtotal = eligibleSubtotal;
+      excludedLineItemsSubtotal = excludedSubtotal;
+      excludedProductIds = Array.from(excludedProductIdSet);
+      calculationBase = eligibleSubtotal + shippingAmount;
+    }
 
     const addPoints = Math.floor(calculationBase * pointRate);
 
@@ -237,6 +367,10 @@ export async function POST(req: Request) {
         calculationBase,
         includeShipping,
         pointRate,
+        excludedTags,
+        excludedLineItemsSubtotal,
+        eligibleLineItemsSubtotal,
+        excludedProductIds,
       });
       return NextResponse.json({
         success: true,
@@ -290,6 +424,10 @@ export async function POST(req: Request) {
         calculationBase,
         includeShipping,
         pointRate,
+        excludedTags,
+        excludedLineItemsSubtotal,
+        eligibleLineItemsSubtotal,
+        excludedProductIds,
         timestamp: now,
       });
 
@@ -324,6 +462,11 @@ export async function POST(req: Request) {
       customerId,
       email,
       addPoints,
+      calculationBase,
+      excludedTags,
+      excludedLineItemsSubtotal,
+      eligibleLineItemsSubtotal,
+      excludedProductIds,
     });
 
     return NextResponse.json({
