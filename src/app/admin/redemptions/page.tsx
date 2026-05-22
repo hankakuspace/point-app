@@ -391,6 +391,8 @@ export default function RedemptionsPage() {
                   { label: "期限切れ", value: "expired" },
                   { label: "Shopify未完了", value: "shopify_pending" },
                   { label: "エラーあり", value: "expire_error" },
+                  { label: "Shopify未完了", value: "shopify_pending" },
+                  { label: "エラーあり", value: "expire_error" },
                 ]}
                 value={statusFilter}
                 onChange={(value) => {
@@ -449,21 +451,38 @@ export default function RedemptionsPage() {
               }}
             >
               {[
-                { label: "すべて", value: summaryCounts.all },
-                { label: "未使用", value: summaryCounts.issued },
-                { label: "使用済み", value: summaryCounts.used },
-                { label: "期限切れ", value: summaryCounts.expired },
+                { label: "すべて", value: summaryCounts.all, filter: "all" },
+                { label: "未使用", value: summaryCounts.issued, filter: "issued" },
+                { label: "使用済み", value: summaryCounts.used, filter: "used" },
+                { label: "期限切れ", value: summaryCounts.expired, filter: "expired" },
                 {
                   label: "Shopify未完了",
                   value: summaryCounts.shopifyDeactivatePending,
+                  filter: "shopify_pending",
                 },
-                { label: "エラーあり", value: summaryCounts.expireError },
+                {
+                  label: "エラーあり",
+                  value: summaryCounts.expireError,
+                  filter: "expire_error",
+                },
               ].map((item, index) => (
-                <div
+                <button
                   key={item.label}
+                  type="button"
+                  onClick={() => {
+                    setStatusFilter(item.filter as RedemptionStatus);
+                    setPage(0);
+                  }}
                   style={{
+                    width: "100%",
                     padding: "0 20px",
+                    border: "none",
                     borderLeft: index === 0 ? "none" : "1px solid #dfe3e8",
+                    background:
+                      statusFilter === item.filter ? "#f6f6f7" : "transparent",
+                    textAlign: "left",
+                    cursor: "pointer",
+                    font: "inherit",
                   }}
                 >
                   <Text as="p" variant="bodySm" tone="subdued">
@@ -472,7 +491,7 @@ export default function RedemptionsPage() {
                   <Text as="p" variant="headingLg">
                     {item.value}件
                   </Text>
-                </div>
+                </button>
               ))}
             </div>
           </Card>
