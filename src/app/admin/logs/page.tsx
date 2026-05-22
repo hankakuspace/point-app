@@ -263,6 +263,11 @@ export default function LogsPage() {
                   placeholder="顧客ID・注文ID・ログIDで検索"
                   value={searchText}
                   onChange={(value) => setSearchText(value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      fetchLogs();
+                    }
+                  }}
                   autoComplete="off"
                 />
               </div>
