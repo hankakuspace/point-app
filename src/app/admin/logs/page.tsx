@@ -48,7 +48,8 @@ export default function LogsPage() {
 
   // ページネーション
   const [page, setPage] = useState(0);
-  const pageSize = 20;
+  const [pageSize, setPageSize] = useState('20');
+  const pageSizeNumber = Number(pageSize);
 
   const addLogsCount = logs.filter((log) => log.type === 'add').length;
   const useLogsCount = logs.filter((log) => log.type === 'use').length;
@@ -194,7 +195,7 @@ export default function LogsPage() {
 
   // DataTable 表示データ
   const rows = logs
-    .slice(page * pageSize, (page + 1) * pageSize)
+    .slice(page * pageSizeNumber, (page + 1) * pageSizeNumber)
     .map((log) => [
       new Date(log.timestamp).toLocaleString(),
       log.customerId,
@@ -370,6 +371,42 @@ export default function LogsPage() {
               </div>
             ) : (
               <>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    gap: "12px",
+                    marginBottom: "12px",
+                  }}
+                >
+                  <Text as="p" tone="subdued">
+                    {logs.length === 0
+                      ? "0件"
+                      : `${page * pageSizeNumber + 1}〜${Math.min(
+                          (page + 1) * pageSizeNumber,
+                          logs.length
+                        )}件 / 全${logs.length}件`}
+                  </Text>
+
+                  <div style={{ width: "140px" }}>
+                    <Select
+                      label="表示件数"
+                      labelHidden
+                      options={[
+                        { label: "20件", value: "20" },
+                        { label: "50件", value: "50" },
+                        { label: "100件", value: "100" },
+                      ]}
+                      value={pageSize}
+                      onChange={(value) => {
+                        setPageSize(value);
+                        setPage(0);
+                      }}
+                    />
+                  </div>
+                </div>
+
                 <IndexTable
                   resourceName={{
                     singular: 'log',
@@ -387,7 +424,7 @@ export default function LogsPage() {
                   ]}
                 >
                   {logs
-                    .slice(page * pageSize, (page + 1) * pageSize)
+                    .slice(page * pageSizeNumber, (page + 1) * pageSizeNumber)
                     .map((log, index) => (
                       <IndexTable.Row
                         id={log.id}
@@ -476,11 +513,11 @@ export default function LogsPage() {
                     setPage((p) => Math.max(0, p - 1))
                   }
 
-                  hasNext={(page + 1) * pageSize < logs.length}
+                  hasNext={(page + 1) * pageSizeNumber < logs.length}
 
                   onNext={() =>
                     setPage((p) =>
-                      (p + 1) * pageSize < logs.length
+                      (p + 1) * pageSizeNumber < logs.length
                         ? p + 1
                         : p
                     )
