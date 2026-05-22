@@ -4,6 +4,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   Page,
+  Layout,
   Card,
   IndexTable,
   Text,
@@ -199,8 +200,11 @@ export default function RedemptionsPage() {
     <Page
       title="ポイント利用コード"
       subtitle={`発行コード数: ${redemptions.length}件 / 表示: ${filteredRedemptions.length}件`}
+      fullWidth
     >
-      <Card>
+      <Layout>
+        <Layout.Section>
+          <Card>
         <div
           style={{
             padding: "12px 16px",
@@ -241,11 +245,11 @@ export default function RedemptionsPage() {
             </Button>
           </div>
         </div>
-      </Card>
+          </Card>
+        </Layout.Section>
 
-      <div style={{ height: "12px" }} />
-
-      <Card>
+        <Layout.Section>
+          <Card>
         <div
           style={{
             padding: "16px",
@@ -283,11 +287,11 @@ export default function RedemptionsPage() {
             </div>
           ))}
         </div>
-      </Card>
+          </Card>
+        </Layout.Section>
 
-      <div style={{ height: "12px" }} />
-
-      <Card>
+        <Layout.Section>
+          <Card>
         <IndexTable
           resourceName={{
             singular: "redemption",
@@ -354,7 +358,9 @@ export default function RedemptionsPage() {
             </IndexTable.Row>
           ))}
         </IndexTable>
-      </Card>
+          </Card>
+        </Layout.Section>
+      </Layout>
     </Page>
   );
 }
