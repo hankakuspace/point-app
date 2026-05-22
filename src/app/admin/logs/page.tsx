@@ -232,72 +232,91 @@ export default function LogsPage() {
           <Card sectioned>
             <div
               style={{
-                display: "grid",
-                gridTemplateColumns:
-                  "minmax(260px, 2fr) minmax(120px, 0.8fr) minmax(140px, 1fr) minmax(140px, 1fr) minmax(140px, 1fr) auto auto",
+                display: "flex",
+                flexWrap: "wrap",
                 gap: "12px",
                 alignItems: "end",
               }}
             >
-              <TextField
-                label="検索"
-                placeholder="顧客ID・注文ID・ログIDで検索"
-                value={searchText}
-                onChange={(value) => setSearchText(value)}
-                autoComplete="off"
-              />
+              <div style={{ flex: "1 1 280px", minWidth: "240px" }}>
+                <TextField
+                  label="検索"
+                  placeholder="顧客ID・注文ID・ログIDで検索"
+                  value={searchText}
+                  onChange={(value) => setSearchText(value)}
+                  autoComplete="off"
+                />
+              </div>
 
-              <Select
-                label="タイプ"
-                options={[
-                  { label: 'すべて', value: '' },
-                  { label: '付与', value: 'add' },
-                  { label: '利用', value: 'use' },
-                ]}
-                value={type}
-                onChange={(value) => setType(value)}
-              />
+              <div style={{ flex: "0 1 150px", minWidth: "130px" }}>
+                <Select
+                  label="タイプ"
+                  options={[
+                    { label: 'すべて', value: '' },
+                    { label: '付与', value: 'add' },
+                    { label: '利用', value: 'use' },
+                  ]}
+                  value={type}
+                  onChange={(value) => setType(value)}
+                />
+              </div>
 
-              <Select
-                label="理由"
-                options={[
-                  { label: 'すべて', value: '' },
-                  { label: '購入付与', value: 'purchase' },
-                  { label: 'ポイント利用', value: 'point_use' },
-                  { label: '管理画面操作', value: 'admin_edit' },
-                  { label: '一括付与', value: 'bulk_add' },
-                  { label: 'キャンペーン', value: 'campaign' },
-                ]}
-                value={reason}
-                onChange={(value) => setReason(value)}
-              />
+              <div style={{ flex: "0 1 170px", minWidth: "140px" }}>
+                <Select
+                  label="理由"
+                  options={[
+                    { label: 'すべて', value: '' },
+                    { label: '購入付与', value: 'purchase' },
+                    { label: 'ポイント利用', value: 'point_use' },
+                    { label: '管理画面操作', value: 'admin_edit' },
+                    { label: '一括付与', value: 'bulk_add' },
+                    { label: 'キャンペーン', value: 'campaign' },
+                  ]}
+                  value={reason}
+                  onChange={(value) => setReason(value)}
+                />
+              </div>
 
-              <TextField
-                label="開始日"
-                type="date"
-                value={startDate}
-                onChange={(value) => setStartDate(value)}
-                autoComplete="off"
-              />
+              <div style={{ flex: "0 1 160px", minWidth: "145px" }}>
+                <TextField
+                  label="開始日"
+                  type="date"
+                  value={startDate}
+                  onChange={(value) => setStartDate(value)}
+                  autoComplete="off"
+                />
+              </div>
 
-              <TextField
-                label="終了日"
-                type="date"
-                value={endDate}
-                onChange={(value) => setEndDate(value)}
-                autoComplete="off"
-              />
+              <div style={{ flex: "0 1 160px", minWidth: "145px" }}>
+                <TextField
+                  label="終了日"
+                  type="date"
+                  value={endDate}
+                  onChange={(value) => setEndDate(value)}
+                  autoComplete="off"
+                />
+              </div>
 
-              <Button
-                onClick={fetchLogs}
-                variant="primary"
+              <div
+                style={{
+                  flex: "0 0 auto",
+                  display: "flex",
+                  gap: "8px",
+                  alignItems: "end",
+                  whiteSpace: "nowrap",
+                }}
               >
-                検索
-              </Button>
+                <Button
+                  onClick={fetchLogs}
+                  variant="primary"
+                >
+                  検索
+                </Button>
 
-              <Button onClick={resetFilters}>
-                リセット
-              </Button>
+                <Button onClick={resetFilters}>
+                  リセット
+                </Button>
+              </div>
             </div>
           </Card>
         </Layout.Section>
