@@ -168,8 +168,15 @@ export default function SettingsPage() {
       <Layout>
         <Layout.Section>
           <Card>
-            <div style={{ padding: "16px", display: "grid", gap: "12px" }}>
-              <Banner tone="info">
+            <div style={{ padding: "16px" }}>
+              <div
+                style={{
+                  maxWidth: "640px",
+                  display: "grid",
+                  gap: "12px",
+                }}
+              >
+                <Banner tone="info">
                 付与率は「%」で入力してください。例：5 と入力すると、購入金額の5%をポイント付与します。
               </Banner>
 
@@ -232,14 +239,15 @@ export default function SettingsPage() {
                 suffix="pt"
               />
 
-              <div style={{ marginTop: "4px" }}>
-                <Button
-                  variant="primary"
-                  onClick={handleSave}
-                  loading={saving}
-                >
-                  設定を保存
-                </Button>
+                <div style={{ marginTop: "4px" }}>
+                  <Button
+                    variant="primary"
+                    onClick={handleSave}
+                    loading={saving}
+                  >
+                    設定を保存
+                  </Button>
+                </div>
               </div>
             </div>
           </Card>
