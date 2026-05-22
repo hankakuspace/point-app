@@ -7,3 +7,9 @@ splited.*
 
 .next
 引き継ぎメモ/
+
+# local environment files
+.env.local
+.env.*.local
+src/.env.local
+src/.env.*.local
