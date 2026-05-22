@@ -2,27 +2,38 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { Icon } from "@shopify/polaris";
+import {
+  HomeIcon,
+  NoteIcon,
+  SettingsIcon,
+  AppsIcon,
+} from "@shopify/polaris-icons";
 
 const adminNavItems = [
   {
     url: "/admin/customers",
     label: "顧客管理",
     match: "/admin/customers",
+    icon: HomeIcon,
   },
   {
     url: "/admin/logs",
     label: "ポイント履歴",
     match: "/admin/logs",
+    icon: NoteIcon,
   },
   {
     url: "/admin/settings",
     label: "ポイント付与設定",
     match: "/admin/settings",
+    icon: SettingsIcon,
   },
   {
     url: "/admin/redemptions",
     label: "ポイント利用コード",
     match: "/admin/redemptions",
+    icon: AppsIcon,
   },
 ];
 
@@ -34,45 +45,9 @@ export default function AdminNav() {
       style={{
         background: "#ffffff",
         borderBottom: "1px solid #e1e3e5",
-        padding: "12px 20px 0",
+        padding: "0 20px",
       }}
     >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "8px",
-          marginBottom: "12px",
-        }}
-      >
-        <span
-          style={{
-            width: "18px",
-            height: "18px",
-            borderRadius: "6px",
-            background: "#fff4ce",
-            color: "#8a6116",
-            display: "inline-flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: "12px",
-            fontWeight: 700,
-          }}
-        >
-          P
-        </span>
-
-        <span
-          style={{
-            fontSize: "18px",
-            fontWeight: 700,
-            color: "#202223",
-          }}
-        >
-          ポイントMAN
-        </span>
-      </div>
-
       <nav
         aria-label="ポイントMAN 管理メニュー"
         style={{
@@ -81,6 +56,7 @@ export default function AdminNav() {
           gap: "4px",
           overflowX: "auto",
           whiteSpace: "nowrap",
+          minHeight: "48px",
         }}
       >
         {adminNavItems.map((item) => {
@@ -93,20 +69,29 @@ export default function AdminNav() {
               style={{
                 display: "inline-flex",
                 alignItems: "center",
-                minHeight: "36px",
+                gap: "6px",
+                minHeight: "48px",
                 padding: "0 14px",
-                borderTopLeftRadius: "8px",
-                borderTopRightRadius: "8px",
                 borderBottom: selected
                   ? "3px solid #303030"
                   : "3px solid transparent",
-                background: selected ? "#f6f6f7" : "transparent",
                 color: selected ? "#202223" : "#5c5f62",
                 fontSize: "14px",
                 fontWeight: selected ? 700 : 500,
                 textDecoration: "none",
               }}
             >
+              <span
+                style={{
+                  width: "18px",
+                  height: "18px",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Icon source={item.icon} tone="base" />
+              </span>
               {item.label}
             </a>
           );
