@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
         points,
         orderId: null,
         reason: reason || 'bulk_add',
-        timestamp: admin.firestore.Timestamp.now(),
+        timestamp: new Date().toISOString(),
       });
     } else {
       // 全顧客に付与
@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
           points,
           orderId: null,
           reason: reason || 'bulk_add',
-          timestamp: admin.firestore.Timestamp.now(),
+          timestamp: new Date().toISOString(),
         });
       });
     }
