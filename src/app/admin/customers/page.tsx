@@ -577,9 +577,10 @@ export default function CustomersPage() {
                 >
                   <button
                     type="button"
-                    onClick={() =>
-                      copyText(customer.id, `customer-id-${customer.id}`)
-                    }
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      copyText(customer.id, `customer-id-${customer.id}`);
+                    }}
                     style={{
                       padding: 0,
                       border: "none",
@@ -607,9 +608,10 @@ export default function CustomersPage() {
                   >
                     <button
                       type="button"
-                      onClick={() =>
-                        copyText(customer.name, `customer-name-${customer.id}`)
-                      }
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        copyText(customer.name, `customer-name-${customer.id}`);
+                      }}
                       style={{
                         padding: 0,
                         border: "none",
@@ -638,9 +640,10 @@ export default function CustomersPage() {
                   >
                     <button
                       type="button"
-                      onClick={() =>
-                        copyText(customer.email, `customer-email-${customer.id}`)
-                      }
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        copyText(customer.email, `customer-email-${customer.id}`);
+                      }}
                       style={{
                         padding: 0,
                         border: "none",
