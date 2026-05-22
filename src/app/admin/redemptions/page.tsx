@@ -295,7 +295,7 @@ export default function RedemptionsPage() {
                   alignItems: "center",
                 }}
               >
-                <Button size="large" submit>
+                <Button size="large" variant="primary" submit>
                   検索
                 </Button>
 
