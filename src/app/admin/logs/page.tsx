@@ -419,17 +419,7 @@ export default function LogsPage() {
 
                         <IndexTable.Cell>
                           {log.reason ? (
-                            <Badge
-                              tone={
-                                log.reason === 'admin_edit'
-                                  ? 'info'
-                                  : log.reason === 'purchase'
-                                    ? 'success'
-                                    : log.reason === 'point_use'
-                                      ? 'attention'
-                                      : undefined
-                              }
-                            >
+                            <Badge>
                               {formatLogReason(log.reason)}
                             </Badge>
                           ) : (
