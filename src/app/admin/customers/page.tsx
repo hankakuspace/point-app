@@ -16,6 +16,7 @@ import {
   TextField,
   Select,
   Banner,
+  Tooltip,
   useIndexResourceState,
 } from "@shopify/polaris";
 
@@ -142,6 +143,7 @@ export default function CustomersPage() {
   const [toastMessage, setToastMessage] = useState("");
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
   const [bulkModalOpen, setBulkModalOpen] = useState(false);
   const [bulkOperation, setBulkOperation] = useState<BulkOperation>("add");
@@ -207,6 +209,23 @@ export default function CustomersPage() {
       console.error("Failed to fetch customers:", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const copyText = async (value?: string | null, key?: string) => {
+    if (!value) return;
+
+    try {
+      await navigator.clipboard.writeText(value);
+
+      if (key) {
+        setCopiedKey(key);
+        window.setTimeout(() => {
+          setCopiedKey((currentKey) => currentKey === key ? null : currentKey);
+        }, 1200);
+      }
+    } catch (error) {
+      console.error("Failed to copy text:", error);
     }
   };
 
@@ -551,17 +570,94 @@ export default function CustomersPage() {
               position={index}
             >
               <IndexTable.Cell>
-                <Text as="span" variant="bodyMd" fontWeight="medium">
-                  {customer.id}
-                </Text>
+                <Tooltip
+                  content={
+                    copiedKey === `customer-id-${customer.id}`
+                      ? "コピーした"
+                      : "コピー"
+                  }
+                >
+                  <button
+                    type="button"
+                    onClick={() =>
+                      copyText(customer.id, `customer-id-${customer.id}`)
+                    }
+                    style={{
+                      padding: 0,
+                      border: "none",
+                      background: "transparent",
+                      cursor: "pointer",
+                      color: "inherit",
+                      font: "inherit",
+                    }}
+                  >
+                    <Text as="span" variant="bodyMd" fontWeight="medium">
+                      {customer.id}
+                    </Text>
+                  </button>
+                </Tooltip>
               </IndexTable.Cell>
 
               <IndexTable.Cell>
-                {customer.name || "-"}
+                {customer.name ? (
+                  <Tooltip
+                    content={
+                      copiedKey === `customer-name-${customer.id}`
+                        ? "コピーした"
+                        : "コピー"
+                    }
+                  >
+                    <button
+                      type="button"
+                      onClick={() =>
+                        copyText(customer.name, `customer-name-${customer.id}`)
+                      }
+                      style={{
+                        padding: 0,
+                        border: "none",
+                        background: "transparent",
+                        cursor: "pointer",
+                        color: "inherit",
+                        font: "inherit",
+                      }}
+                    >
+                      {customer.name}
+                    </button>
+                  </Tooltip>
+                ) : (
+                  "-"
+                )}
               </IndexTable.Cell>
 
               <IndexTable.Cell>
-                {customer.email || "-"}
+                {customer.email ? (
+                  <Tooltip
+                    content={
+                      copiedKey === `customer-email-${customer.id}`
+                        ? "コピーした"
+                        : "コピー"
+                    }
+                  >
+                    <button
+                      type="button"
+                      onClick={() =>
+                        copyText(customer.email, `customer-email-${customer.id}`)
+                      }
+                      style={{
+                        padding: 0,
+                        border: "none",
+                        background: "transparent",
+                        cursor: "pointer",
+                        color: "inherit",
+                        font: "inherit",
+                      }}
+                    >
+                      {customer.email}
+                    </button>
+                  </Tooltip>
+                ) : (
+                  "-"
+                )}
               </IndexTable.Cell>
 
               <IndexTable.Cell>
