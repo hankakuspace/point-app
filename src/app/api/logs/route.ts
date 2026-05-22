@@ -8,6 +8,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const customerId = searchParams.get('customerId') || '';
     const type = searchParams.get('type') || '';
+    const reason = searchParams.get('reason') || '';
     const startDate = searchParams.get('startDate') || '';
     const endDate = searchParams.get('endDate') || '';
 
@@ -19,6 +20,9 @@ export async function GET(req: NextRequest) {
     }
     if (type) {
       queryRef = queryRef.where('type', '==', type);
+    }
+    if (reason) {
+      queryRef = queryRef.where('reason', '==', reason);
     }
     if (startDate) {
       const startLocal = new Date(startDate + 'T00:00:00'); // JST

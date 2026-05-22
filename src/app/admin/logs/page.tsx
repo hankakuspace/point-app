@@ -36,6 +36,7 @@ export default function LogsPage() {
   // フィルタ
   const [customerId, setCustomerId] = useState('');
   const [type, setType] = useState('');
+  const [reason, setReason] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
@@ -64,6 +65,7 @@ export default function LogsPage() {
       const params = new URLSearchParams();
       if (customerId) params.append('customerId', customerId);
       if (type) params.append('type', type);
+      if (reason) params.append('reason', reason);
       if (startDate) params.append('startDate', startDate);
       if (endDate) params.append('endDate', endDate);
 
@@ -194,7 +196,7 @@ export default function LogsPage() {
               style={{
                 display: "grid",
                 gridTemplateColumns:
-                  "2fr 1fr 1fr 1fr auto",
+                  "2fr 1fr 1fr 1fr 1fr auto",
                 gap: "12px",
                 alignItems: "end",
               }}
@@ -215,6 +217,20 @@ export default function LogsPage() {
                 ]}
                 value={type}
                 onChange={(v) => setType(v)}
+              />
+
+              <Select
+                label="理由"
+                options={[
+                  { label: 'すべて', value: '' },
+                  { label: '購入付与', value: 'purchase' },
+                  { label: 'ポイント利用', value: 'point_use' },
+                  { label: '管理画面操作', value: 'admin_edit' },
+                  { label: '一括付与', value: 'bulk_add' },
+                  { label: 'キャンペーン', value: 'campaign' },
+                ]}
+                value={reason}
+                onChange={(v) => setReason(v)}
               />
 
               <TextField
