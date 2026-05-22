@@ -250,43 +250,41 @@ export default function RedemptionsPage() {
 
         <Layout.Section>
           <Card>
-        <div
-          style={{
-            padding: "16px",
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
-            gap: "12px",
-          }}
-        >
-          {[
-            { label: "すべて", value: summaryCounts.all },
-            { label: "未使用", value: summaryCounts.issued },
-            { label: "使用済み", value: summaryCounts.used },
-            { label: "期限切れ", value: summaryCounts.expired },
-            {
-              label: "Shopify未完了",
-              value: summaryCounts.shopifyDeactivatePending,
-            },
-            { label: "エラーあり", value: summaryCounts.expireError },
-          ].map((item) => (
             <div
-              key={item.label}
               style={{
-                border: "1px solid #dfe3e8",
-                borderRadius: "12px",
-                padding: "12px",
-                background: "#ffffff",
+                padding: "20px",
+                display: "grid",
+                gridTemplateColumns: "repeat(6, minmax(0, 1fr))",
+                gap: "0",
               }}
             >
-              <Text as="p" variant="bodySm" tone="subdued">
-                {item.label}
-              </Text>
-              <Text as="p" variant="headingLg">
-                {item.value}件
-              </Text>
+              {[
+                { label: "すべて", value: summaryCounts.all },
+                { label: "未使用", value: summaryCounts.issued },
+                { label: "使用済み", value: summaryCounts.used },
+                { label: "期限切れ", value: summaryCounts.expired },
+                {
+                  label: "Shopify未完了",
+                  value: summaryCounts.shopifyDeactivatePending,
+                },
+                { label: "エラーあり", value: summaryCounts.expireError },
+              ].map((item, index) => (
+                <div
+                  key={item.label}
+                  style={{
+                    padding: "4px 20px",
+                    borderLeft: index === 0 ? "none" : "1px solid #dfe3e8",
+                  }}
+                >
+                  <Text as="p" variant="bodySm" tone="subdued">
+                    {item.label}
+                  </Text>
+                  <Text as="p" variant="headingLg">
+                    {item.value}件
+                  </Text>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
           </Card>
         </Layout.Section>
 
