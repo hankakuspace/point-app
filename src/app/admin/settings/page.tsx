@@ -31,6 +31,21 @@ const defaultSettings: Settings = {
   maxUsePoints: 1000,
 };
 
+function getSettingsShop() {
+  if (typeof window === "undefined") {
+    return "";
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  return params.get("shop") || "";
+}
+
+function getSettingsApiPath(shop: string) {
+  return shop
+    ? `/api/admin/settings?shop=${encodeURIComponent(shop)}`
+    : "/api/admin/settings";
+}
+
 export default function SettingsPage() {
   const [settings, setSettings] = useState<Settings>(defaultSettings);
   const [pointRatePercent, setPointRatePercent] = useState("3");
@@ -44,7 +59,8 @@ export default function SettingsPage() {
   useEffect(() => {
     async function fetchSettings() {
       try {
-        const res = await fetch("/api/admin/settings", {
+        const shop = getSettingsShop();
+        const res = await fetch(getSettingsApiPath(shop), {
           cache: "no-store",
         });
 
@@ -107,8 +123,10 @@ export default function SettingsPage() {
     setSaving(true);
 
     try {
-      const payload: Settings = {
+      const shop = getSettingsShop();
+      const payload = {
         ...settings,
+        shop,
         pointRate: ratePercent / 100,
         excludedTags: excludedTagsText
           .split(",")
@@ -118,7 +136,7 @@ export default function SettingsPage() {
         maxUsePoints,
       };
 
-      const res = await fetch("/api/admin/settings", {
+      const res = await fetch(getSettingsApiPath(shop), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -133,7 +151,13 @@ export default function SettingsPage() {
         return;
       }
 
-      setSettings(payload);
+      setSettings({
+        pointRate: payload.pointRate,
+        includeShipping: payload.includeShipping,
+        excludedTags: payload.excludedTags,
+        minUsePoints: payload.minUsePoints,
+        maxUsePoints: payload.maxUsePoints,
+      });
       setToastMessage("ポイント付与設定を保存しました");
       setToastActive(true);
     } catch (error) {

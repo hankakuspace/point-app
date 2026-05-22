@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/firebaseAdmin";
 import { callShopifyAdminAPI } from "@/lib/shopify";
+import { getPointSettings } from "@/lib/point-settings";
 
 function renderHtml(html: string) {
   return new NextResponse(html, {
@@ -148,9 +149,9 @@ export async function GET(req: Request) {
     return renderLoginHtml();
   }
 
-  const [customerSnap, settingsSnap] = await Promise.all([
+  const [customerSnap, settings] = await Promise.all([
     db.collection("customers").doc(customerId).get(),
-    db.collection("settings").doc("default").get(),
+    getPointSettings(db, shop),
   ]);
 
   if (!customerSnap.exists) {
@@ -176,7 +177,6 @@ export async function GET(req: Request) {
   }
 
   const customer = customerSnap.data() || {};
-  const settings = settingsSnap.exists ? settingsSnap.data() || {} : {};
 
   const points =
     typeof customer.points === "number" && Number.isFinite(customer.points)
@@ -208,6 +208,10 @@ export async function GET(req: Request) {
   if (allCartProductsExcluded) {
     return renderPointUseUnavailableHtml();
   }
+
+  const usePointFormAction = shop
+    ? `/apps/apps/api/use-point-form?shop=${encodeURIComponent(shop)}`
+    : "/apps/apps/api/use-point-form";
 
   const maxAvailable = Math.min(maxUsePoints, points);
   const canUse = points >= minUsePoints;
@@ -243,7 +247,7 @@ export async function GET(req: Request) {
       <span class="pill">${canUse ? "利用可能" : "利用不可"}</span>
     </div>
 
-    <form method="post" action="/apps/apps/api/use-point-form" target="_top">
+    <form method="post" action="${usePointFormAction}" target="_top">
       <input type="hidden" name="customerId" value="${customerId}" />
       <input type="hidden" name="email" value="${email}" />
       <input type="hidden" name="returnMode" value="cart" />

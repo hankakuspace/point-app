@@ -3,6 +3,7 @@ import crypto from "crypto";
 import { NextResponse } from "next/server";
 import { db } from "@/lib/firebaseAdmin";
 import { callShopifyAdminAPI } from "@/lib/shopify";
+import { getPointSettings } from "@/lib/point-settings";
 
 type ShopifyOrderPaidPayload = {
   id?: number | string;
@@ -266,9 +267,7 @@ export async function POST(req: Request) {
 
     const customerData = customerDoc.data() || {};
 
-    const settingsRef = db.collection("settings").doc("default");
-    const settingsSnap = await settingsRef.get();
-    const settings = settingsSnap.exists ? settingsSnap.data() : { pointRate: 0.03 };
+    const settings = await getPointSettings(db, shopDomain);
     const pointRate =
       typeof settings?.pointRate === "number" && Number.isFinite(settings.pointRate)
         ? settings.pointRate

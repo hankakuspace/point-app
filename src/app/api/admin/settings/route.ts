@@ -1,22 +1,14 @@
 // src/app/api/admin/settings/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/firebase";
+import { getPointSettings, savePointSettings } from "@/lib/point-settings";
 
-const SETTINGS_DOC_ID = "default"; // 単一ストア用。マルチストアなら shopId をキーに。
-
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const doc = await db.collection("settings").doc(SETTINGS_DOC_ID).get();
-    if (!doc.exists) {
-      return NextResponse.json({
-        pointRate: 0.03,
-        includeShipping: false,
-        excludedTags: [],
-        minUsePoints: 100,
-        maxUsePoints: 1000,
-      });
-    }
-    return NextResponse.json(doc.data());
+    const shop = req.nextUrl.searchParams.get("shop") || "";
+    const settings = await getPointSettings(db, shop);
+
+    return NextResponse.json(settings);
   } catch (error) {
     console.error("Error fetching settings:", error);
     return NextResponse.json({ error: "Failed to fetch settings" }, { status: 500 });
@@ -26,6 +18,10 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
+    const shop =
+      typeof body.shop === "string" && body.shop.trim()
+        ? body.shop.trim()
+        : req.nextUrl.searchParams.get("shop") || "";
 
     const data = {
       pointRate: Number(body.pointRate) || 0.03,
@@ -37,9 +33,9 @@ export async function POST(req: NextRequest) {
       maxUsePoints: Number(body.maxUsePoints) || 1000,
     };
 
-    await db.collection("settings").doc(SETTINGS_DOC_ID).set(data, { merge: true });
+    const settings = await savePointSettings(db, data, shop);
 
-    return NextResponse.json({ success: true, data });
+    return NextResponse.json({ success: true, data: settings });
   } catch (error) {
     console.error("Error saving settings:", error);
     return NextResponse.json({ error: "Failed to save settings" }, { status: 500 });

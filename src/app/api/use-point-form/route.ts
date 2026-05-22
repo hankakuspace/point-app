@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/firebaseAdmin";
 import { callShopifyAdminAPI } from "@/lib/shopify";
+import { getPointSettings } from "@/lib/point-settings";
 
 function renderHtml({
   title,
@@ -311,8 +312,7 @@ export async function POST(req: Request) {
       });
     }
 
-    const settingsSnap = await db.collection("settings").doc("default").get();
-    const settings = settingsSnap.exists ? settingsSnap.data() : {};
+    const settings = await getPointSettings(db, shop);
 
     const minUsePoints =
       typeof settings?.minUsePoints === "number" && Number.isFinite(settings.minUsePoints)
