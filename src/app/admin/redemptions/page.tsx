@@ -434,13 +434,6 @@ export default function RedemptionsPage() {
                   未使用コードを期限切れにする
                 </Button>
 
-                <Button
-                  size="large"
-                  onClick={handleRetryFailedDeactivation}
-                  loading={retryFailedLoading}
-                >
-                  Shopify未完了を再実行
-                </Button>
               </div>
             </form>
           </Card>
