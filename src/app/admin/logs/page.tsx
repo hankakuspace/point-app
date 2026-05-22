@@ -215,11 +215,11 @@ export default function LogsPage() {
     <Page
       title="ポイント履歴管理"
       fullWidth
-      primaryAction={{
-        content: "CSV",
-        onAction: exportCSV,
-      }}
       secondaryActions={[
+        {
+          content: "CSV",
+          onAction: exportCSV,
+        },
         {
           content: "JSON",
           onAction: exportJSON,
