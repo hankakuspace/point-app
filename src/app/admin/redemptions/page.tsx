@@ -17,7 +17,13 @@ import {
   Tooltip,
 } from "@shopify/polaris";
 
-type RedemptionStatus = "all" | "issued" | "used" | "expired";
+type RedemptionStatus =
+  | "all"
+  | "issued"
+  | "used"
+  | "expired"
+  | "shopify_pending"
+  | "expire_error";
 
 interface PointRedemption {
   id: string;
@@ -168,7 +174,12 @@ export default function RedemptionsPage() {
 
     return redemptions.filter((redemption) => {
       const matchesStatus =
-        statusFilter === "all" || redemption.status === statusFilter;
+        statusFilter === "all" ||
+        redemption.status === statusFilter ||
+        (statusFilter === "shopify_pending" &&
+          redemption.status === "expired" &&
+          redemption.shopifyDeactivated === false) ||
+        (statusFilter === "expire_error" && Boolean(redemption.expireError));
 
       if (!matchesStatus) {
         return false;
@@ -378,6 +389,8 @@ export default function RedemptionsPage() {
                   { label: "未使用", value: "issued" },
                   { label: "使用済み", value: "used" },
                   { label: "期限切れ", value: "expired" },
+                  { label: "Shopify未完了", value: "shopify_pending" },
+                  { label: "エラーあり", value: "expire_error" },
                 ]}
                 value={statusFilter}
                 onChange={(value) => {
