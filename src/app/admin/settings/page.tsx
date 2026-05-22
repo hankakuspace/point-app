@@ -208,7 +208,7 @@ export default function SettingsPage() {
                 onChange={(value) => setExcludedTagsText(value)}
                 autoComplete="off"
                 placeholder="no_point, sample"
-                helpText="カンマ区切りで入力します。現時点では設定保存のみで、Webhook側の除外処理は未実装です。"
+                helpText="このタグが付いた商品は、購入ポイントの付与対象から除外されます。カンマ区切りで複数指定できます。"
               />
 
               <TextField
