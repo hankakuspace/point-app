@@ -96,6 +96,11 @@ export async function POST(req: Request) {
     const retryFailed =
       typeof body.retryFailed === "boolean" ? body.retryFailed : false;
 
+    const targetShop =
+      typeof body.shop === "string" && body.shop.trim()
+        ? body.shop.trim()
+        : "";
+
     const expireMinutes =
       typeof body.expireMinutes === "number" &&
       Number.isFinite(body.expireMinutes) &&
@@ -117,10 +122,19 @@ export async function POST(req: Request) {
       ? snapshot.docs.filter((doc) => {
           const data = doc.data();
 
+          if (targetShop && data.shop !== targetShop) {
+            return false;
+          }
+
           return data.shopifyDeactivated === false;
         })
       : snapshot.docs.filter((doc) => {
           const data = doc.data();
+
+          if (targetShop && data.shop !== targetShop) {
+            return false;
+          }
+
           const createdAt = data.createdAt;
 
           if (!createdAt) {

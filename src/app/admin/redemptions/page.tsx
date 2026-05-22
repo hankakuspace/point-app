@@ -162,12 +162,16 @@ export default function RedemptionsPage() {
     setExpireLoading(true);
 
     try {
+      const shop = getRedemptionsShop();
+
       const res = await fetch("/api/admin/redemptions/expire", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({}),
+        body: JSON.stringify({
+          shop,
+        }),
       });
 
       const data = await res.json();
