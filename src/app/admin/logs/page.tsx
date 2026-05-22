@@ -224,7 +224,7 @@ export default function LogsPage() {
               style={{
                 display: "grid",
                 gridTemplateColumns:
-                  "minmax(180px, 2fr) minmax(220px, 2.4fr) minmax(110px, 1fr) minmax(120px, 1fr) minmax(150px, 1.2fr) minmax(150px, 1.2fr) auto",
+                  "repeat(auto-fit, minmax(170px, 1fr))",
                 gap: "12px",
                 alignItems: "end",
               }}
