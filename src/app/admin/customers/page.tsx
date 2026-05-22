@@ -176,7 +176,9 @@ export default function CustomersPage() {
     selectedResources,
     allResourcesSelected,
     handleSelectionChange,
-  } = useIndexResourceState(filteredCustomers);
+  } = useIndexResourceState(
+    filteredCustomers as unknown as { [key: string]: unknown }[]
+  );
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -665,7 +667,7 @@ export default function CustomersPage() {
 
               <IndexTable.Cell>
                 <Badge tone="success">
-                  {customer.points || 0} pt
+                  {`${customer.points || 0} pt`}
                 </Badge>
               </IndexTable.Cell>
 
