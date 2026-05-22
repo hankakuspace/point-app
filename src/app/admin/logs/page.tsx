@@ -17,6 +17,7 @@ import {
   Banner,
   Spinner,
   Badge,
+  Tooltip,
 } from '@shopify/polaris';
 
 interface Log {
@@ -32,7 +33,6 @@ interface Log {
 export default function LogsPage() {
   const [logs, setLogs] = useState<Log[]>([]);
   const [loading, setLoading] = useState(true);
-  const [hoveredCopyKey, setHoveredCopyKey] = useState<string | null>(null);
 
   // フィルタ
   const [searchText, setSearchText] = useState('');
@@ -541,38 +541,24 @@ export default function LogsPage() {
                         </IndexTable.Cell>
 
                         <IndexTable.Cell>
-                          <button
-                            type="button"
-                            onClick={() => copyText(log.customerId)}
-                            onMouseEnter={() => setHoveredCopyKey(`customer-${log.id}`)}
-                            onMouseLeave={() => setHoveredCopyKey(null)}
-                            title="コピー"
-                            style={{
-                              border: "none",
-                              background: "transparent",
-                              padding: 0,
-                              color: "#202223",
-                              cursor: "pointer",
-                              font: "inherit",
-                              textAlign: "left",
-                              display: "inline-flex",
-                              alignItems: "center",
-                              gap: "6px",
-                            }}
-                          >
-                            <span>{log.customerId}</span>
-                            {hoveredCopyKey === `customer-${log.id}` ? (
-                              <span
-                                style={{
-                                  color: "#6d7175",
-                                  fontSize: "12px",
-                                  fontWeight: 500,
-                                }}
-                              >
-                                コピー
-                              </span>
-                            ) : null}
-                          </button>
+                          <Tooltip content="コピー">
+                            <button
+                              type="button"
+                              onClick={() => copyText(log.customerId)}
+                              aria-label="顧客IDをコピー"
+                              style={{
+                                border: "none",
+                                background: "transparent",
+                                padding: 0,
+                                color: "#202223",
+                                cursor: "pointer",
+                                font: "inherit",
+                                textAlign: "left",
+                              }}
+                            >
+                              {log.customerId}
+                            </button>
+                          </Tooltip>
                         </IndexTable.Cell>
 
                         <IndexTable.Cell>
@@ -621,38 +607,24 @@ export default function LogsPage() {
 
                         <IndexTable.Cell>
                           {log.orderId ? (
-                            <button
-                              type="button"
-                              onClick={() => copyText(log.orderId)}
-                              onMouseEnter={() => setHoveredCopyKey(`order-${log.id}`)}
-                              onMouseLeave={() => setHoveredCopyKey(null)}
-                              title="コピー"
-                              style={{
-                                border: "none",
-                                background: "transparent",
-                                padding: 0,
-                                color: "#202223",
-                                cursor: "pointer",
-                                font: "inherit",
-                                textAlign: "left",
-                                display: "inline-flex",
-                                alignItems: "center",
-                                gap: "6px",
-                              }}
-                            >
-                              <span>{log.orderId}</span>
-                              {hoveredCopyKey === `order-${log.id}` ? (
-                                <span
-                                  style={{
-                                    color: "#6d7175",
-                                    fontSize: "12px",
-                                    fontWeight: 500,
-                                  }}
-                                >
-                                  コピー
-                                </span>
-                              ) : null}
-                            </button>
+                            <Tooltip content="コピー">
+                              <button
+                                type="button"
+                                onClick={() => copyText(log.orderId)}
+                                aria-label="注文IDをコピー"
+                                style={{
+                                  border: "none",
+                                  background: "transparent",
+                                  padding: 0,
+                                  color: "#202223",
+                                  cursor: "pointer",
+                                  font: "inherit",
+                                  textAlign: "left",
+                                }}
+                              >
+                                {log.orderId}
+                              </button>
+                            </Tooltip>
                           ) : (
                             '-'
                           )}
