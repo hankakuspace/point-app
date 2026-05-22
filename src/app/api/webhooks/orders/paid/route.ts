@@ -416,6 +416,7 @@ export async function POST(req: Request) {
         transaction.set(pointLogRef, {
           customerDocId: customerDoc!.id,
           customerId: customerId || null,
+          shop: shopDomain,
           type: "add",
           points: addPoints,
           orderId,
@@ -441,6 +442,7 @@ export async function POST(req: Request) {
             {
               customerDocId: customerDoc!.id,
               customerId: customerDoc!.id,
+              shop: shopDomain,
               type: "use",
               points: redemptionPoints,
               orderId,
