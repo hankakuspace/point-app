@@ -249,7 +249,11 @@ export default function LogsPage() {
         {/* フィルタ */}
         <Layout.Section>
           <Card sectioned>
-            <div
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                fetchLogs();
+              }}
               style={{
                 display: "flex",
                 flexWrap: "wrap",
@@ -263,11 +267,6 @@ export default function LogsPage() {
                   placeholder="顧客ID・注文ID・ログIDで検索"
                   value={searchText}
                   onChange={(value) => setSearchText(value)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") {
-                      fetchLogs();
-                    }
-                  }}
                   autoComplete="off"
                 />
               </div>
@@ -301,12 +300,7 @@ export default function LogsPage() {
                 />
               </div>
 
-              <div
-                style={{
-                  flex: "0 1 160px",
-                  minWidth: "145px",
-                }}
-              >
+              <div style={{ flex: "0 1 160px", minWidth: "145px" }}>
                 <TextField
                   label="開始日"
                   placeholder="YYYY-MM-DD"
@@ -316,12 +310,7 @@ export default function LogsPage() {
                 />
               </div>
 
-              <div
-                style={{
-                  flex: "0 1 160px",
-                  minWidth: "145px",
-                }}
-              >
+              <div style={{ flex: "0 1 160px", minWidth: "145px" }}>
                 <TextField
                   label="終了日"
                   placeholder="YYYY-MM-DD"
@@ -341,8 +330,7 @@ export default function LogsPage() {
                 }}
               >
                 <button
-                  type="button"
-                  onClick={fetchLogs}
+                  type="submit"
                   style={{
                     height: "32px",
                     padding: "0 14px",
@@ -378,7 +366,7 @@ export default function LogsPage() {
                   リセット
                 </button>
               </div>
-            </div>
+            </form>
           </Card>
         </Layout.Section>
 
