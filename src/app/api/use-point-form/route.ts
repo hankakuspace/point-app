@@ -158,6 +158,79 @@ function renderCartDiscountRedirectHtml(discountCode: string) {
   );
 }
 
+function normalizeTag(value: unknown) {
+  return String(value ?? "").trim().toLowerCase();
+}
+
+function getProductNumericIdFromGid(gid: string) {
+  return gid.split("/").pop() || gid;
+}
+
+async function fetchProductTagsByIds(productIds: string[], shop?: string | null) {
+  const uniqueProductIds = Array.from(new Set(productIds.filter(Boolean)));
+
+  if (uniqueProductIds.length === 0) {
+    return new Map<string, string[]>();
+  }
+
+  const query = `
+    query ProductTags($ids: [ID!]!) {
+      nodes(ids: $ids) {
+        ... on Product {
+          id
+          tags
+        }
+      }
+    }
+  `;
+
+  const data = await callShopifyAdminAPI(
+    query,
+    {
+      ids: uniqueProductIds.map((productId) => `gid://shopify/Product/${productId}`),
+    },
+    shop || undefined
+  );
+
+  const tagsByProductId = new Map<string, string[]>();
+  const nodes = Array.isArray(data?.nodes) ? data.nodes : [];
+
+  for (const node of nodes) {
+    if (!node?.id) continue;
+
+    const productId = getProductNumericIdFromGid(String(node.id));
+    const tags = Array.isArray(node.tags) ? node.tags.map(normalizeTag) : [];
+
+    tagsByProductId.set(productId, tags);
+  }
+
+  return tagsByProductId;
+}
+
+async function areAllCartProductsExcluded({
+  productIds,
+  excludedTags,
+  shop,
+}: {
+  productIds: string[];
+  excludedTags: string[];
+  shop?: string | null;
+}) {
+  const uniqueProductIds = Array.from(new Set(productIds.filter(Boolean)));
+
+  if (uniqueProductIds.length === 0 || excludedTags.length === 0) {
+    return false;
+  }
+
+  const tagsByProductId = await fetchProductTagsByIds(uniqueProductIds, shop);
+
+  return uniqueProductIds.every((productId) => {
+    const productTags = tagsByProductId.get(productId) || [];
+
+    return productTags.some((tag) => excludedTags.includes(tag));
+  });
+}
+
 async function deactivateReissuedShopifyDiscount(
   discountNodeId?: string | null,
   shop?: string | null
@@ -219,6 +292,10 @@ export async function POST(req: Request) {
     const customerId = loggedInCustomerId || formCustomerId;
 
     const usePoints = Number(formData.get("usePoints"));
+    const cartProductIds = String(formData.get("cartProductIds") || "")
+      .split(",")
+      .map((productId) => productId.trim())
+      .filter(Boolean);
 
     if (!customerId) {
       return renderHtml({
@@ -246,6 +323,23 @@ export async function POST(req: Request) {
       typeof settings?.maxUsePoints === "number" && Number.isFinite(settings.maxUsePoints)
         ? settings.maxUsePoints
         : 1000;
+
+    const excludedTags = Array.isArray(settings?.excludedTags)
+      ? settings.excludedTags.map(normalizeTag).filter(Boolean)
+      : [];
+
+    const allCartProductsExcluded = await areAllCartProductsExcluded({
+      productIds: cartProductIds,
+      excludedTags,
+      shop,
+    });
+
+    if (allCartProductsExcluded) {
+      return renderHtml({
+        title: "ポイントを利用できません",
+        message: "この商品はポイント利用対象外です。ポイントを使わずにチェックアウトへお進みください。",
+      });
+    }
 
     if (usePoints < minUsePoints) {
       return renderHtml({
