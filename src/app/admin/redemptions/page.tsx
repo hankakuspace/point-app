@@ -146,6 +146,47 @@ export default function RedemptionsPage() {
     );
   }, [redemptions, statusFilter]);
 
+  const summaryCounts = useMemo(() => {
+    return redemptions.reduce(
+      (counts, redemption) => {
+        counts.all += 1;
+
+        if (redemption.status === "issued") {
+          counts.issued += 1;
+        }
+
+        if (redemption.status === "used") {
+          counts.used += 1;
+        }
+
+        if (redemption.status === "expired") {
+          counts.expired += 1;
+        }
+
+        if (
+          redemption.status === "expired" &&
+          redemption.shopifyDeactivated === false
+        ) {
+          counts.shopifyDeactivatePending += 1;
+        }
+
+        if (redemption.expireError) {
+          counts.expireError += 1;
+        }
+
+        return counts;
+      },
+      {
+        all: 0,
+        issued: 0,
+        used: 0,
+        expired: 0,
+        shopifyDeactivatePending: 0,
+        expireError: 0,
+      }
+    );
+  }, [redemptions]);
+
   if (loading) {
     return (
       <div style={{ padding: "40px", textAlign: "center" }}>
@@ -199,6 +240,48 @@ export default function RedemptionsPage() {
               未使用コードを期限切れにする
             </Button>
           </div>
+        </div>
+      </Card>
+
+      <div style={{ height: "12px" }} />
+
+      <Card>
+        <div
+          style={{
+            padding: "16px",
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+            gap: "12px",
+          }}
+        >
+          {[
+            { label: "すべて", value: summaryCounts.all },
+            { label: "未使用", value: summaryCounts.issued },
+            { label: "使用済み", value: summaryCounts.used },
+            { label: "期限切れ", value: summaryCounts.expired },
+            {
+              label: "Shopify未完了",
+              value: summaryCounts.shopifyDeactivatePending,
+            },
+            { label: "エラーあり", value: summaryCounts.expireError },
+          ].map((item) => (
+            <div
+              key={item.label}
+              style={{
+                border: "1px solid #dfe3e8",
+                borderRadius: "12px",
+                padding: "12px",
+                background: "#ffffff",
+              }}
+            >
+              <Text as="p" variant="bodySm" tone="subdued">
+                {item.label}
+              </Text>
+              <Text as="p" variant="headingLg">
+                {item.value}件
+              </Text>
+            </div>
+          ))}
         </div>
       </Card>
 
