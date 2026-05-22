@@ -557,7 +557,9 @@ export default function CustomersPage() {
             { title: "名前" },
             { title: "メール" },
             { title: "ポイント" },
-            { title: "最新履歴" },
+            { title: "最新ポイント" },
+            { title: "最新理由" },
+            { title: "最新日時" },
           ]}
         >
           {filteredCustomers.map((customer, index) => (
@@ -669,71 +671,75 @@ export default function CustomersPage() {
 
               <IndexTable.Cell>
                 {customer.latestPointLog ? (
-                  <div
+                  <span
                     style={{
-                      display: "flex",
+                      display: "inline-flex",
                       alignItems: "center",
-                      gap: "8px",
+                      justifyContent: "center",
+                      width: "fit-content",
+                      padding: "2px 8px",
+                      borderRadius: "999px",
+                      background:
+                        customer.latestPointLog.type === "use"
+                          ? "#fde2e1"
+                          : "#d1fadf",
+                      color:
+                        customer.latestPointLog.type === "use"
+                          ? "#8e1f0b"
+                          : "#0c5132",
+                      fontSize: "12px",
+                      fontWeight: 600,
+                      lineHeight: "18px",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {customer.latestPointLog.type === "use" ? "-" : "+"}
+                    {customer.latestPointLog.points || 0} pt
+                  </span>
+                ) : (
+                  "-"
+                )}
+              </IndexTable.Cell>
+
+              <IndexTable.Cell>
+                {customer.latestPointLog ? (
+                  <span
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "5px",
                       whiteSpace: "nowrap",
                     }}
                   >
                     <span
+                      aria-hidden="true"
                       style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        width: "fit-content",
-                        padding: "2px 8px",
+                        width: "8px",
+                        height: "8px",
                         borderRadius: "999px",
-                        background:
-                          customer.latestPointLog.type === "use"
-                            ? "#fde2e1"
-                            : "#d1fadf",
-                        color:
-                          customer.latestPointLog.type === "use"
-                            ? "#8e1f0b"
-                            : "#0c5132",
-                        fontSize: "12px",
-                        fontWeight: 600,
-                        lineHeight: "18px",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {customer.latestPointLog.type === "use" ? "-" : "+"}
-                      {customer.latestPointLog.points || 0} pt
-                    </span>
-
-                    <span
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "5px",
-                      }}
-                    >
-                      <span
-                        aria-hidden="true"
-                        style={{
-                          width: "8px",
-                          height: "8px",
-                          borderRadius: "999px",
-                          background: getLatestLogMeta(
-                            customer.latestPointLog.reason
-                          ).dotColor,
-                          flexShrink: 0,
-                        }}
-                      />
-
-                      <Text as="span" variant="bodySm">
-                        {getLatestLogMeta(
+                        background: getLatestLogMeta(
                           customer.latestPointLog.reason
-                        ).label}
-                      </Text>
-                    </span>
+                        ).dotColor,
+                        flexShrink: 0,
+                      }}
+                    />
 
-                    <Text as="span" variant="bodySm" tone="subdued">
-                      {formatShortDate(customer.latestPointLog.timestamp)}
+                    <Text as="span" variant="bodySm">
+                      {getLatestLogMeta(
+                        customer.latestPointLog.reason
+                      ).label}
                     </Text>
-                  </div>
+                  </span>
+                ) : (
+                  "-"
+                )}
+              </IndexTable.Cell>
+
+              <IndexTable.Cell>
+                {customer.latestPointLog ? (
+                  <Text as="span" variant="bodySm" tone="subdued">
+                    {formatShortDate(customer.latestPointLog.timestamp)}
+                  </Text>
                 ) : (
                   "-"
                 )}
