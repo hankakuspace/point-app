@@ -50,6 +50,10 @@ export default function LogsPage() {
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState('20');
   const pageSizeNumber = Number(pageSize);
+  const pageStart = logs.length === 0 ? 0 : page * pageSizeNumber + 1;
+  const pageEnd = logs.length === 0
+    ? 0
+    : Math.min((page + 1) * pageSizeNumber, logs.length);
 
   const addLogsCount = logs.filter((log) => log.type === 'add').length;
   const useLogsCount = logs.filter((log) => log.type === 'use').length;
@@ -507,22 +511,36 @@ export default function LogsPage() {
                     ))}
                 </IndexTable>
 
-                <Pagination
-                  hasPrevious={page > 0}
-                  onPrevious={() =>
-                    setPage((p) => Math.max(0, p - 1))
-                  }
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    gap: "12px",
+                    marginTop: "12px",
+                  }}
+                >
+                  <Text as="p" tone="subdued">
+                    {logs.length === 0
+                      ? "0件"
+                      : `全${logs.length}件中 ${pageStart}〜${pageEnd}件を表示`}
+                  </Text>
 
-                  hasNext={(page + 1) * pageSizeNumber < logs.length}
-
-                  onNext={() =>
-                    setPage((p) =>
-                      (p + 1) * pageSizeNumber < logs.length
-                        ? p + 1
-                        : p
-                    )
-                  }
-                />
+                  <Pagination
+                    hasPrevious={page > 0}
+                    onPrevious={() =>
+                      setPage((p) => Math.max(0, p - 1))
+                    }
+                    hasNext={(page + 1) * pageSizeNumber < logs.length}
+                    onNext={() =>
+                      setPage((p) =>
+                        (p + 1) * pageSizeNumber < logs.length
+                          ? p + 1
+                          : p
+                      )
+                    }
+                  />
+                </div>
               </>
             )}
           </Card>
