@@ -1,6 +1,7 @@
 // src/app/page.tsx
 import { redirect } from "next/navigation";
 import { db } from "@/lib/firebase";
+import { getPointSettings } from "@/lib/point-settings";
 
 type HomePageProps = {
   searchParams?: Promise<{
@@ -118,8 +119,7 @@ export default async function Home({ searchParams }: HomePageProps) {
       ? customer.points
       : 0;
 
-  const settingsSnap = await db.collection("settings").doc("default").get();
-  const settings = settingsSnap.exists ? settingsSnap.data() : {};
+  const settings = await getPointSettings(db, shop);
 
   const minUsePoints =
     typeof settings?.minUsePoints === "number"
@@ -135,6 +135,10 @@ export default async function Home({ searchParams }: HomePageProps) {
     typeof customer?.email === "string"
       ? customer.email
       : "";
+
+  const usePointFormAction = shop
+    ? `/apps/apps/api/use-point-form?shop=${encodeURIComponent(shop)}`
+    : "/apps/apps/api/use-point-form";
 
   if (mode === "cart") {
     return (
@@ -203,7 +207,7 @@ export default async function Home({ searchParams }: HomePageProps) {
           </div>
 
           {customerSnap.exists ? (
-            <form method="post" action="/apps/apps/api/use-point-form" target="_top">
+            <form method="post" action={usePointFormAction} target="_top">
               <input type="hidden" name="customerId" value={loggedInCustomerId} />
               <input type="hidden" name="email" value={email} />
               <input type="hidden" name="returnMode" value="cart" />
@@ -414,7 +418,7 @@ export default async function Home({ searchParams }: HomePageProps) {
               1ポイント = 1円として利用できます。発行された割引コードをチェックアウト画面で入力してください。
             </p>
 
-            <form method="post" action="/apps/apps/api/use-point-form" target="_top">
+            <form method="post" action={usePointFormAction} target="_top">
               <input type="hidden" name="customerId" value={loggedInCustomerId} />
               <input type="hidden" name="email" value={email} />
 
