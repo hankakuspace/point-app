@@ -1,6 +1,5 @@
 // src/lib/shopify.ts
 import { shopifyApi, LATEST_API_VERSION } from "@shopify/shopify-api";
-import { restResources } from "@shopify/shopify-api/rest/admin/2025-07";
 import "@shopify/shopify-api/adapters/node";
 
 /**
@@ -45,7 +44,6 @@ export const shopify = shopifyApi({
   hostName: process.env.SHOPIFY_APP_URL!.replace(/^https?:\/\//, ""),
   isEmbeddedApp: true,
   apiVersion: LATEST_API_VERSION,
-  restResources,
   sessionStorage: new SimpleMemorySessionStorage(),
 });
 
