@@ -673,7 +673,7 @@ export default function LogsPage() {
                   <Text as="p" tone="subdued">
                     {logs.length === 0
                       ? "0件"
-                      : `全${logs.length}件中 ${pageStart}〜${pageEnd}件を表示`}
+                      : `${pageStart}〜${pageEnd}件目 / 全${logs.length}件`}
                   </Text>
                 </div>
               </>
