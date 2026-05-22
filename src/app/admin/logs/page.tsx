@@ -313,20 +313,46 @@ export default function LogsPage() {
                   display: "flex",
                   gap: "8px",
                   alignItems: "flex-end",
-                  paddingBottom: "1px",
                   whiteSpace: "nowrap",
                 }}
               >
-                <Button
+                <button
+                  type="button"
                   onClick={fetchLogs}
-                  variant="primary"
+                  style={{
+                    height: "34px",
+                    padding: "0 14px",
+                    borderRadius: "8px",
+                    border: "1px solid #303030",
+                    background: "#303030",
+                    color: "#fff",
+                    fontSize: "13px",
+                    fontWeight: 600,
+                    lineHeight: "34px",
+                    cursor: "pointer",
+                  }}
                 >
                   検索
-                </Button>
+                </button>
 
-                <Button onClick={resetFilters}>
+                <button
+                  type="button"
+                  onClick={resetFilters}
+                  style={{
+                    height: "34px",
+                    padding: "0 14px",
+                    borderRadius: "8px",
+                    border: "1px solid #c9cccf",
+                    background: "#fff",
+                    color: "#202223",
+                    fontSize: "13px",
+                    fontWeight: 600,
+                    lineHeight: "34px",
+                    cursor: "pointer",
+                  }}
+                >
                   リセット
-                </Button>
+                </button>
               </div>
             </div>
           </Card>
