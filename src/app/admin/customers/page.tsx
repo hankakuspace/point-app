@@ -540,33 +540,6 @@ export default function CustomersPage() {
           </div>
         </Layout.Section>
 
-        {selectedResources.length > 0 && (
-          <Layout.Section>
-            <Card>
-            <div
-              style={{
-                padding: "12px 16px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: "12px",
-              }}
-            >
-              <Text as="p" variant="bodyMd" fontWeight="medium">
-                選択中：{selectedResources.length}名
-              </Text>
-
-              <Button
-                variant="primary"
-                onClick={() => setBulkModalOpen(true)}
-              >
-                選択顧客にポイント操作
-              </Button>
-            </div>
-            </Card>
-          </Layout.Section>
-        )}
-
         <Layout.Section>
           <Card>
         <IndexTable
