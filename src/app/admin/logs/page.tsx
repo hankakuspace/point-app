@@ -514,18 +514,12 @@ export default function LogsPage() {
                 <div
                   style={{
                     display: "flex",
-                    justifyContent: "space-between",
+                    justifyContent: "flex-end",
                     alignItems: "center",
                     gap: "12px",
                     marginTop: "12px",
                   }}
                 >
-                  <Text as="p" tone="subdued">
-                    {logs.length === 0
-                      ? "0件"
-                      : `全${logs.length}件中 ${pageStart}〜${pageEnd}件を表示`}
-                  </Text>
-
                   <Pagination
                     hasPrevious={page > 0}
                     onPrevious={() =>
@@ -540,6 +534,12 @@ export default function LogsPage() {
                       )
                     }
                   />
+
+                  <Text as="p" tone="subdued">
+                    {logs.length === 0
+                      ? "0件"
+                      : `全${logs.length}件中 ${pageStart}〜${pageEnd}件を表示`}
+                  </Text>
                 </div>
               </>
             )}
