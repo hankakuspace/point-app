@@ -163,6 +163,16 @@ export default function LogsPage() {
     }
   };
 
+  const copyText = async (value?: string) => {
+    if (!value) return;
+
+    try {
+      await navigator.clipboard.writeText(value);
+    } catch (error) {
+      console.error('Failed to copy text:', error);
+    }
+  };
+
   // 一括付与処理
   const handleBulkAdd = async () => {
     if (!bulkPoints || Number(bulkPoints) <= 0) {
@@ -530,7 +540,22 @@ export default function LogsPage() {
                         </IndexTable.Cell>
 
                         <IndexTable.Cell>
-                          {log.customerId}
+                          <button
+                            type="button"
+                            onClick={() => copyText(log.customerId)}
+                            title="顧客IDをコピー"
+                            style={{
+                              border: "none",
+                              background: "transparent",
+                              padding: 0,
+                              color: "#202223",
+                              cursor: "copy",
+                              font: "inherit",
+                              textAlign: "left",
+                            }}
+                          >
+                            {log.customerId}
+                          </button>
                         </IndexTable.Cell>
 
                         <IndexTable.Cell>
@@ -578,7 +603,26 @@ export default function LogsPage() {
                         </IndexTable.Cell>
 
                         <IndexTable.Cell>
-                          {log.orderId || '-'}
+                          {log.orderId ? (
+                            <button
+                              type="button"
+                              onClick={() => copyText(log.orderId)}
+                              title="注文IDをコピー"
+                              style={{
+                                border: "none",
+                                background: "transparent",
+                                padding: 0,
+                                color: "#202223",
+                                cursor: "copy",
+                                font: "inherit",
+                                textAlign: "left",
+                              }}
+                            >
+                              {log.orderId}
+                            </button>
+                          ) : (
+                            '-'
+                          )}
                         </IndexTable.Cell>
 
                         <IndexTable.Cell>
