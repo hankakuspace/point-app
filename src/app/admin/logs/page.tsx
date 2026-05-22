@@ -320,15 +320,15 @@ export default function LogsPage() {
                   type="button"
                   onClick={fetchLogs}
                   style={{
-                    height: "34px",
+                    height: "32px",
                     padding: "0 14px",
                     borderRadius: "8px",
                     border: "1px solid #303030",
                     background: "#303030",
                     color: "#fff",
-                    fontSize: "13px",
+                    fontSize: "12px",
                     fontWeight: 600,
-                    lineHeight: "34px",
+                    lineHeight: "32px",
                     cursor: "pointer",
                   }}
                 >
@@ -339,15 +339,15 @@ export default function LogsPage() {
                   type="button"
                   onClick={resetFilters}
                   style={{
-                    height: "34px",
+                    height: "32px",
                     padding: "0 14px",
                     borderRadius: "8px",
                     border: "1px solid #c9cccf",
                     background: "#fff",
                     color: "#202223",
-                    fontSize: "13px",
+                    fontSize: "12px",
                     fontWeight: 600,
-                    lineHeight: "34px",
+                    lineHeight: "32px",
                     cursor: "pointer",
                   }}
                 >
