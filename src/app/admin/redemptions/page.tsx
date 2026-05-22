@@ -12,6 +12,7 @@ import {
   Spinner,
   Select,
   Button,
+  TextField,
 } from "@shopify/polaris";
 
 type RedemptionStatus = "all" | "issued" | "used" | "expired";
@@ -79,6 +80,7 @@ export default function RedemptionsPage() {
   const [redemptions, setRedemptions] = useState<PointRedemption[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<RedemptionStatus>("all");
+  const [searchText, setSearchText] = useState("");
   const [expireLoading, setExpireLoading] = useState(false);
   const [pageSize, setPageSize] = useState("20");
 
@@ -139,14 +141,33 @@ export default function RedemptionsPage() {
   }, []);
 
   const filteredRedemptions = useMemo(() => {
-    if (statusFilter === "all") {
-      return redemptions;
-    }
+    const normalizedSearchText = searchText.trim().toLowerCase();
 
-    return redemptions.filter(
-      (redemption) => redemption.status === statusFilter
-    );
-  }, [redemptions, statusFilter]);
+    return redemptions.filter((redemption) => {
+      const matchesStatus =
+        statusFilter === "all" || redemption.status === statusFilter;
+
+      if (!matchesStatus) {
+        return false;
+      }
+
+      if (!normalizedSearchText) {
+        return true;
+      }
+
+      const searchableValues = [
+        redemption.id,
+        redemption.discountCode,
+        redemption.customerId,
+        redemption.email,
+        redemption.orderId,
+      ];
+
+      return searchableValues.some((value) =>
+        String(value || "").toLowerCase().includes(normalizedSearchText)
+      );
+    });
+  }, [redemptions, statusFilter, searchText]);
 
   const pageSizeNumber = Number(pageSize);
   const visibleRedemptions = filteredRedemptions.slice(0, pageSizeNumber);
@@ -215,11 +236,19 @@ export default function RedemptionsPage() {
           style={{
             padding: "16px",
             display: "grid",
-            gridTemplateColumns: "220px auto",
+            gridTemplateColumns: "minmax(280px, 1fr) 220px auto",
             gap: "12px",
             alignItems: "end",
           }}
         >
+          <TextField
+            label="検索"
+            placeholder="コード・顧客ID・注文ID・メールで検索"
+            value={searchText}
+            onChange={(value) => setSearchText(value)}
+            autoComplete="off"
+          />
+
           <Select
             label="状態"
             options={[
