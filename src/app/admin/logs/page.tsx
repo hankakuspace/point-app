@@ -487,11 +487,18 @@ export default function LogsPage() {
                   </div>
                 </div>
 
-                <IndexTable
-                  resourceName={{
-                    singular: 'log',
-                    plural: 'logs',
+                <div
+                  style={{
+                    overflowX: "auto",
+                    width: "100%",
                   }}
+                >
+                  <div style={{ minWidth: "960px" }}>
+                    <IndexTable
+                      resourceName={{
+                        singular: 'log',
+                        plural: 'logs',
+                      }}
                   itemCount={logs.length}
                   selectable={false}
                   headings={[
@@ -585,7 +592,9 @@ export default function LogsPage() {
                         </IndexTable.Cell>
                       </IndexTable.Row>
                     ))}
-                </IndexTable>
+                    </IndexTable>
+                  </div>
+                </div>
 
                 <div
                   style={{
