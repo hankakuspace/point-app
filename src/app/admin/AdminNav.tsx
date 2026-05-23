@@ -1,7 +1,7 @@
 // src/app/admin/AdminNav.tsx
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { Icon } from "@shopify/polaris";
 import {
   HomeIcon,
@@ -39,6 +39,12 @@ const adminNavItems = [
 
 export default function AdminNav() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const queryString = searchParams.toString();
+
+  const buildNavUrl = (url: string) => {
+    return queryString ? `${url}?${queryString}` : url;
+  };
 
   return (
     <div
@@ -65,7 +71,7 @@ export default function AdminNav() {
           return (
             <a
               key={item.url}
-              href={item.url}
+              href={buildNavUrl(item.url)}
               style={{
                 display: "inline-flex",
                 alignItems: "center",
