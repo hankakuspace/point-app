@@ -1,6 +1,7 @@
 // src/app/admin/layout.tsx
 "use client";
 
+import { Suspense } from "react";
 import "@shopify/polaris/build/esm/styles.css";
 
 import {
@@ -24,7 +25,9 @@ export default function AdminLayout({
             background: "#f6f6f7",
           }}
         >
-          <AdminNav />
+          <Suspense fallback={null}>
+            <AdminNav />
+          </Suspense>
 
           <div
             style={{
