@@ -1,9 +1,9 @@
 // src/app/api/check-scopes/route.ts
 import { NextRequest, NextResponse } from "next/server";
+import { db } from "@/lib/firebaseAdmin";
 
 export async function GET(req: NextRequest) {
   const shop = req.nextUrl.searchParams.get("shop") || "";
-  const accessToken = process.env.SHOPIFY_ACCESS_TOKEN || "";
 
   if (!shop) {
     return NextResponse.json(
@@ -12,14 +12,19 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  if (!accessToken) {
-    return NextResponse.json(
-      { ok: false, error: "Missing SHOPIFY_ACCESS_TOKEN" },
-      { status: 400 }
-    );
-  }
-
   try {
+    const shopDoc = await db.collection("shops").doc(shop).get();
+    const shopData = shopDoc.exists ? shopDoc.data() : null;
+    const accessToken =
+      typeof shopData?.accessToken === "string" ? shopData.accessToken : "";
+
+    if (!accessToken) {
+      return NextResponse.json(
+        { ok: false, error: "Missing shop accessToken", shop },
+        { status: 400 }
+      );
+    }
+
     const response = await fetch(
       `https://${shop}/admin/oauth/access_scopes.json`,
       {
@@ -36,7 +41,7 @@ export async function GET(req: NextRequest) {
       console.error("❌ Shopify API error:", error);
 
       return NextResponse.json(
-        { ok: false, error },
+        { ok: false, error, shop },
         { status: response.status }
       );
     }
@@ -48,7 +53,7 @@ export async function GET(req: NextRequest) {
     console.error("❌ Error checking access scopes:", err);
 
     return NextResponse.json(
-      { ok: false, error: err.message },
+      { ok: false, error: err.message, shop },
       { status: 500 }
     );
   }
