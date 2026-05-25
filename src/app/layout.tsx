@@ -70,6 +70,24 @@ export default function RootLayout({
                   } catch (error) {}
 
                   try {
+                    var currentParams = new URLSearchParams(window.location.search);
+                    var currentShop = currentParams.get("shop") || "";
+
+                    if (!currentShop && window.location.pathname.indexOf("/admin") === 0) {
+                      currentParams.set("shop", shop);
+
+                      var nextUrl =
+                        window.location.pathname +
+                        "?" +
+                        currentParams.toString() +
+                        window.location.hash;
+
+                      window.location.replace(nextUrl);
+                      return;
+                    }
+                  } catch (error) {}
+
+                  try {
                     var appBridgeConfig = {
                       apiKey: "${shopifyApiKey}",
                       shop: shop
