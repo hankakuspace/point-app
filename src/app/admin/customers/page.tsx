@@ -197,6 +197,33 @@ export default function CustomersPage() {
     }
   }, []);
 
+  const getShopifySessionHeaders = async (
+    baseHeaders: HeadersInit = {}
+  ) => {
+    const headers = new Headers(baseHeaders);
+    const shopifyWindow = window as typeof window & {
+      shopify?: {
+        idToken?: () => Promise<string>;
+      };
+    };
+
+    for (let i = 0; i < 20; i += 1) {
+      if (typeof shopifyWindow.shopify?.idToken === "function") {
+        const token = await shopifyWindow.shopify.idToken();
+
+        if (token) {
+          headers.set("Authorization", `Bearer ${token}`);
+        }
+
+        return headers;
+      }
+
+      await new Promise((resolve) => window.setTimeout(resolve, 100));
+    }
+
+    return headers;
+  };
+
   const fetchCustomers = async () => {
     setLoading(true);
 
@@ -212,6 +239,7 @@ export default function CustomersPage() {
           : "/api/admin/customers",
         {
           cache: "no-store",
+          headers: await getShopifySessionHeaders(),
         }
       );
 
@@ -256,9 +284,9 @@ export default function CustomersPage() {
     try {
       const res = await fetch("/api/admin/customers/sync-shopify", {
         method: "POST",
-        headers: {
+        headers: await getShopifySessionHeaders({
           "Content-Type": "application/json",
-        },
+        }),
         body: JSON.stringify({
           shop: shopDomain,
         }),
@@ -310,9 +338,9 @@ export default function CustomersPage() {
             "/api/admin/customers/update-points",
             {
               method: "POST",
-              headers: {
+              headers: await getShopifySessionHeaders({
                 "Content-Type": "application/json",
-              },
+              }),
               body: JSON.stringify({
                 customerId,
                 amount,
