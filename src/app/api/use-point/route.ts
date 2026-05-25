@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/firebaseAdmin";
 import { callShopifyAdminAPI } from "@/lib/shopify";
 import { getPointSettings } from "@/lib/point-settings";
+import { requireShopifySessionToken } from "@/lib/shopifySessionToken";
 
 export async function POST(req: Request) {
   try {
@@ -13,6 +14,12 @@ export async function POST(req: Request) {
         success: false,
         message: "Missing shop",
       });
+    }
+
+    const session = await requireShopifySessionToken(req, shop);
+
+    if (!session.ok) {
+      return session.response;
     }
 
     if (!email || !usePoints || usePoints <= 0) {

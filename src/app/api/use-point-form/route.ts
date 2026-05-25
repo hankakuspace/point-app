@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/firebaseAdmin";
 import { callShopifyAdminAPI } from "@/lib/shopify";
 import { getPointSettings } from "@/lib/point-settings";
+import { verifyShopifyAppProxySignature } from "@/lib/shopifyAppProxy";
 
 function renderHtml({
   title,
@@ -286,11 +287,17 @@ export async function POST(req: Request) {
     const shop = url.searchParams.get("shop") || "";
     const loggedInCustomerId = url.searchParams.get("logged_in_customer_id") || "";
 
+    if (!verifyShopifyAppProxySignature(url.searchParams)) {
+      return renderHtml({
+        title: "ポイントを利用できません",
+        message: "不正なリクエストです。カート画面からもう一度お試しください。",
+      });
+    }
+
     const formData = await req.formData();
     const returnMode = String(formData.get("returnMode") || "").trim();
 
-    const formCustomerId = String(formData.get("customerId") || "").trim();
-    const customerId = loggedInCustomerId || formCustomerId;
+    const customerId = loggedInCustomerId;
 
     const usePoints = Number(formData.get("usePoints"));
     const cartProductIds = String(formData.get("cartProductIds") || "")
