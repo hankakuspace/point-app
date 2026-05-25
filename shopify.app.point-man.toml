@@ -1,0 +1,35 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "28a49457fb29322fdd08c6a6186c4905"
+name = "Point MAN"
+application_url = "https://point-app-gamma.vercel.app"
+embedded = true
+
+[webhooks]
+api_version = "2026-04"
+
+[[webhooks.subscriptions]]
+compliance_topics = [ "customers/data_request" ]
+uri = "https://point-app-gamma.vercel.app/api/webhooks/customers/data_request"
+
+[[webhooks.subscriptions]]
+compliance_topics = [ "customers/redact" ]
+uri = "https://point-app-gamma.vercel.app/api/webhooks/customers/redact"
+
+[[webhooks.subscriptions]]
+compliance_topics = [ "shop/redact" ]
+uri = "https://point-app-gamma.vercel.app/api/webhooks/shop/redact"
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "read_all_orders,write_checkouts,read_checkouts,read_customers,write_customers,read_discounts,write_discounts,read_orders,write_orders,read_products"
+optional_scopes = [ ]
+use_legacy_install_flow = false
+
+[auth]
+redirect_urls = [ "https://point-app-gamma.vercel.app/api/auth/callback" ]
+
+[app_proxy]
+url = "https://point-app-gamma.vercel.app"
+subpath = "apps"
+prefix = "apps"
