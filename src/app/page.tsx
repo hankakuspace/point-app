@@ -21,6 +21,7 @@ export default async function Home({ searchParams }: HomePageProps) {
 
   const loggedInCustomerId = params?.logged_in_customer_id;
   const shop = params?.shop;
+  const host = params?.host;
   const mode = params?.mode;
 
   if (!loggedInCustomerId && mode === "cart") {
@@ -101,7 +102,23 @@ export default async function Home({ searchParams }: HomePageProps) {
   }
 
   if (!loggedInCustomerId) {
-    redirect("/admin/customers");
+    const redirectParams = new URLSearchParams();
+
+    if (shop) {
+      redirectParams.set("shop", shop);
+    }
+
+    if (host) {
+      redirectParams.set("host", host);
+    }
+
+    const redirectQuery = redirectParams.toString();
+
+    redirect(
+      redirectQuery
+        ? `/admin/customers?${redirectQuery}`
+        : "/admin/customers"
+    );
   }
 
   const customerRef = db
