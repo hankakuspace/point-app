@@ -209,8 +209,10 @@ export async function GET(req: Request) {
     return renderPointUseUnavailableHtml();
   }
 
-  const usePointFormAction = shop
-    ? `/apps/apps/api/use-point-form?shop=${encodeURIComponent(shop)}`
+  const usePointFormParams = new URL(req.url).searchParams;
+  const usePointFormQuery = usePointFormParams.toString();
+  const usePointFormAction = usePointFormQuery
+    ? `/apps/apps/api/use-point-form?${usePointFormQuery}`
     : "/apps/apps/api/use-point-form";
 
   const maxAvailable = Math.min(maxUsePoints, points);
@@ -248,8 +250,6 @@ export async function GET(req: Request) {
     </div>
 
     <form method="post" action="${usePointFormAction}" target="_top">
-      <input type="hidden" name="customerId" value="${customerId}" />
-      <input type="hidden" name="email" value="${email}" />
       <input type="hidden" name="returnMode" value="cart" />
       <input type="hidden" name="cartProductIds" value="${cartProductIds.join(",")}" />
 
