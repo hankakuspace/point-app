@@ -1,6 +1,7 @@
 // src/app/api/admin/customers/sync-shopify/route.ts
 import { NextResponse } from "next/server";
 import { db } from "@/lib/firebase";
+import { requireShopifySessionToken } from "@/lib/shopifySessionToken";
 
 export const runtime = "nodejs";
 
@@ -45,6 +46,12 @@ export async function POST(req: Request) {
   try {
     const body = await req.json().catch(() => ({}));
     const shop = body.shop;
+
+    const session = await requireShopifySessionToken(req, shop);
+
+    if (!session.ok) {
+      return session.response;
+    }
 
     if (!shop || typeof shop !== "string") {
       return NextResponse.json(

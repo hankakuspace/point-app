@@ -1,6 +1,7 @@
 // src/app/api/admin/customers/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/firebaseAdmin";
+import { requireShopifySessionToken } from "@/lib/shopifySessionToken";
 
 function getTimestampValue(value: any) {
   if (!value) {
@@ -27,6 +28,11 @@ function getTimestampValue(value: any) {
 export async function GET(req: NextRequest) {
   try {
     const shop = req.nextUrl.searchParams.get("shop") || "";
+    const session = await requireShopifySessionToken(req, shop);
+
+    if (!session.ok) {
+      return session.response;
+    }
 
     const customersQuery = shop
       ? db.collection("customers").where("shop", "==", shop)

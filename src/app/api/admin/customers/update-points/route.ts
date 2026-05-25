@@ -2,6 +2,7 @@
 
 import { NextResponse } from "next/server";
 import { db } from "@/lib/firebaseAdmin";
+import { requireShopifySessionToken } from "@/lib/shopifySessionToken";
 
 export async function POST(req: Request) {
   try {
@@ -12,6 +13,12 @@ export async function POST(req: Request) {
       typeof body.shop === "string" && body.shop.trim()
         ? body.shop.trim()
         : "";
+
+    const session = await requireShopifySessionToken(req, shop);
+
+    if (!session.ok) {
+      return session.response;
+    }
 
     if (!customerId || typeof amount !== "number") {
       return NextResponse.json(

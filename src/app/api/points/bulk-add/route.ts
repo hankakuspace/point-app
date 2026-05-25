@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/firebase';
 import admin from 'firebase-admin';
+import { requireShopifySessionToken } from '@/lib/shopifySessionToken';
 
 export async function POST(req: NextRequest) {
   try {
@@ -11,6 +12,12 @@ export async function POST(req: NextRequest) {
       typeof body.shop === 'string' && body.shop.trim()
         ? body.shop.trim()
         : '';
+
+    const session = await requireShopifySessionToken(req, shop);
+
+    if (!session.ok) {
+      return session.response;
+    }
 
     if (!points || typeof points !== 'number') {
       return NextResponse.json({ error: 'ポイント数を指定してください' }, { status: 400 });
