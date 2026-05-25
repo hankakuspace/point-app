@@ -2,10 +2,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/firebase";
 import { getPointSettings, savePointSettings } from "@/lib/point-settings";
+import { requireShopifySessionToken } from "@/lib/shopifySessionToken";
 
 export async function GET(req: NextRequest) {
   try {
     const shop = req.nextUrl.searchParams.get("shop") || "";
+    const session = await requireShopifySessionToken(req, shop);
+
+    if (!session.ok) {
+      return session.response;
+    }
+
     const settings = await getPointSettings(db, shop);
 
     return NextResponse.json(settings);
@@ -22,6 +29,12 @@ export async function POST(req: NextRequest) {
       typeof body.shop === "string" && body.shop.trim()
         ? body.shop.trim()
         : req.nextUrl.searchParams.get("shop") || "";
+
+    const session = await requireShopifySessionToken(req, shop);
+
+    if (!session.ok) {
+      return session.response;
+    }
 
     const data = {
       pointRate: Number(body.pointRate) || 0.03,

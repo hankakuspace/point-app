@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/firebaseAdmin";
 import { callShopifyAdminAPI } from "@/lib/shopify";
+import { requireShopifySessionToken } from "@/lib/shopifySessionToken";
 
 export const runtime = "nodejs";
 
@@ -100,6 +101,12 @@ export async function POST(req: Request) {
       typeof body.shop === "string" && body.shop.trim()
         ? body.shop.trim()
         : "";
+
+    const session = await requireShopifySessionToken(req, targetShop);
+
+    if (!session.ok) {
+      return session.response;
+    }
 
     const expireMinutes =
       typeof body.expireMinutes === "number" &&

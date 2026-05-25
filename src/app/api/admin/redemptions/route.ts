@@ -1,12 +1,18 @@
 // src/app/api/admin/redemptions/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/firebaseAdmin";
+import { requireShopifySessionToken } from "@/lib/shopifySessionToken";
 
 export const runtime = "nodejs";
 
 export async function GET(req: NextRequest) {
   try {
     const shop = req.nextUrl.searchParams.get("shop") || "";
+    const session = await requireShopifySessionToken(req, shop);
+
+    if (!session.ok) {
+      return session.response;
+    }
 
     const query = shop
       ? db.collection("point_redemptions").where("shop", "==", shop)
