@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/firebaseAdmin";
 import { callShopifyAdminAPI } from "@/lib/shopify";
 import { getPointSettings } from "@/lib/point-settings";
-import { verifyShopifyAppProxySignature } from "@/lib/shopifyAppProxy";
+import { verifyPointFormToken } from "@/lib/pointFormToken";
 
 function renderHtml({
   title,
@@ -99,8 +99,12 @@ function renderHtml({
   );
 }
 
-function renderCartDiscountRedirectHtml(discountCode: string) {
-  const redirectUrl = `/discount/${encodeURIComponent(discountCode)}?redirect=/checkout`;
+function renderCartDiscountRedirectHtml(discountCode: string, shop: string) {
+  const shopDomain = shop || "";
+  const redirectPath = `/discount/${encodeURIComponent(discountCode)}?redirect=/checkout`;
+  const redirectUrl = shopDomain
+    ? `https://${shopDomain}${redirectPath}`
+    : redirectPath;
 
   return new NextResponse(
     `<!doctype html>
@@ -287,23 +291,35 @@ export async function POST(req: Request) {
     const shop = url.searchParams.get("shop") || "";
     const loggedInCustomerId = url.searchParams.get("logged_in_customer_id") || "";
 
-    if (!verifyShopifyAppProxySignature(url.searchParams)) {
-      return renderHtml({
-        title: "ポイントを利用できません",
-        message: "不正なリクエストです。カート画面からもう一度お試しください。",
-      });
-    }
-
     const formData = await req.formData();
     const returnMode = String(formData.get("returnMode") || "").trim();
 
     const customerId = loggedInCustomerId;
 
     const usePoints = Number(formData.get("usePoints"));
-    const cartProductIds = String(formData.get("cartProductIds") || "")
+    const cartProductIdsRaw = String(formData.get("cartProductIds") || "").trim();
+    const pointFormExpiresAt = String(formData.get("pointFormExpiresAt") || "").trim();
+    const pointFormToken = String(formData.get("pointFormToken") || "").trim();
+
+    const cartProductIds = cartProductIdsRaw
       .split(",")
       .map((productId) => productId.trim())
       .filter(Boolean);
+
+    if (
+      !verifyPointFormToken({
+        shop,
+        customerId,
+        cartProductIds: cartProductIdsRaw,
+        expiresAt: pointFormExpiresAt,
+        token: pointFormToken,
+      })
+    ) {
+      return renderHtml({
+        title: "ポイントを利用できません",
+        message: "不正なリクエストです。カート画面からもう一度お試しください。",
+      });
+    }
 
     if (!customerId) {
       return renderHtml({
@@ -533,7 +549,7 @@ export async function POST(req: Request) {
     });
 
     if (returnMode === "cart") {
-      return renderCartDiscountRedirectHtml(discountCode);
+      return renderCartDiscountRedirectHtml(discountCode, shop);
     }
 
     return renderHtml({

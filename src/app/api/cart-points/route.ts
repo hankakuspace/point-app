@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/firebaseAdmin";
 import { callShopifyAdminAPI } from "@/lib/shopify";
 import { getPointSettings } from "@/lib/point-settings";
+import { createPointFormToken } from "@/lib/pointFormToken";
 
 function renderHtml(html: string) {
   return new NextResponse(html, {
@@ -209,11 +210,21 @@ export async function GET(req: Request) {
     return renderPointUseUnavailableHtml();
   }
 
+  const pointFormCartProductIds = cartProductIds.join(",");
+  const pointFormExpiresAt = String(Date.now() + 10 * 60 * 1000);
+  const pointFormToken = createPointFormToken({
+    shop,
+    customerId,
+    cartProductIds: pointFormCartProductIds,
+    expiresAt: pointFormExpiresAt,
+  });
+
   const usePointFormParams = new URL(req.url).searchParams;
   const usePointFormQuery = usePointFormParams.toString();
+  const appUrl = process.env.SHOPIFY_APP_URL || "";
   const usePointFormAction = usePointFormQuery
-    ? `/apps/apps/api/use-point-form?${usePointFormQuery}`
-    : "/apps/apps/api/use-point-form";
+    ? `${appUrl}/api/use-point-form?${usePointFormQuery}`
+    : `${appUrl}/api/use-point-form`;
 
   const maxAvailable = Math.min(maxUsePoints, points);
   const canUse = points >= minUsePoints;
@@ -251,7 +262,9 @@ export async function GET(req: Request) {
 
     <form method="post" action="${usePointFormAction}" target="_top">
       <input type="hidden" name="returnMode" value="cart" />
-      <input type="hidden" name="cartProductIds" value="${cartProductIds.join(",")}" />
+      <input type="hidden" name="cartProductIds" value="${pointFormCartProductIds}" />
+      <input type="hidden" name="pointFormExpiresAt" value="${pointFormExpiresAt}" />
+      <input type="hidden" name="pointFormToken" value="${pointFormToken}" />
 
       <label>
         利用ポイント数
