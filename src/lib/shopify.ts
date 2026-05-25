@@ -93,25 +93,78 @@ export async function registerOrderPaidWebhook(shop: string, accessToken: string
  * Firestore の shops/{shop} に保存済みの accessToken を使用する。
  * shop が未指定の場合は、単一ストア運用前提で shops の先頭1件を使用する。
  */
-export async function callShopifyAdminAPI(
-  query: string,
-  variables: Record<string, any> = {},
-  shop?: string
+interface StoredShopToken {
+  accessToken?: string;
+  refreshToken?: string;
+  accessTokenExpiresAt?: string | null;
+  refreshTokenExpiresAt?: string | null;
+  scope?: string;
+  tokenType?: string;
+}
+
+function isAccessTokenExpiringSoon(accessTokenExpiresAt?: string | null) {
+  if (!accessTokenExpiresAt) {
+    return false;
+  }
+
+  const expiresAtMs = new Date(accessTokenExpiresAt).getTime();
+
+  if (!Number.isFinite(expiresAtMs)) {
+    return true;
+  }
+
+  const refreshBufferMs = 5 * 60 * 1000;
+
+  return expiresAtMs <= Date.now() + refreshBufferMs;
+}
+
+async function refreshShopifyOfflineAccessToken(
+  shop: string,
+  refreshToken: string
 ) {
+  const response = await fetch(`https://${shop}/admin/oauth/access_token`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify({
+      client_id: process.env.SHOPIFY_API_KEY,
+      client_secret: process.env.SHOPIFY_API_SECRET,
+      grant_type: "refresh_token",
+      refresh_token: refreshToken,
+    }),
+  });
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      `Shopify token refresh error: ${JSON.stringify(result)}`
+    );
+  }
+
+  return result as {
+    access_token: string;
+    refresh_token?: string;
+    expires_in?: number;
+    refresh_token_expires_in?: number;
+    scope?: string;
+  };
+}
+
+async function getShopifyAdminAccessToken(shop?: string) {
   const { db } = await import("@/lib/firebaseAdmin");
 
   let targetShop = shop;
-  let accessToken: string | undefined;
+  let shopDoc;
 
   if (targetShop) {
-    const shopDoc = await db.collection("shops").doc(targetShop).get();
+    shopDoc = await db.collection("shops").doc(targetShop).get();
 
     if (!shopDoc.exists) {
       throw new Error(`Shop not found: ${targetShop}`);
     }
-
-    const shopData = shopDoc.data() as { accessToken?: string };
-    accessToken = shopData.accessToken;
   } else {
     const shopsSnapshot = await db.collection("shops").limit(1).get();
 
@@ -119,16 +172,67 @@ export async function callShopifyAdminAPI(
       throw new Error("No installed shop found");
     }
 
-    const shopDoc = shopsSnapshot.docs[0];
+    shopDoc = shopsSnapshot.docs[0];
     targetShop = shopDoc.id;
-
-    const shopData = shopDoc.data() as { accessToken?: string };
-    accessToken = shopData.accessToken;
   }
 
-  if (!targetShop || !accessToken) {
+  const shopData = shopDoc.data() as StoredShopToken | undefined;
+
+  if (!targetShop || !shopData?.accessToken) {
     throw new Error("Missing shop or access token");
   }
+
+  if (
+    shopData.refreshToken &&
+    isAccessTokenExpiringSoon(shopData.accessTokenExpiresAt)
+  ) {
+    const refreshed = await refreshShopifyOfflineAccessToken(
+      targetShop,
+      shopData.refreshToken
+    );
+
+    const issuedAt = Date.now();
+    const accessTokenExpiresAt = refreshed.expires_in
+      ? new Date(issuedAt + refreshed.expires_in * 1000).toISOString()
+      : null;
+    const refreshTokenExpiresAt = refreshed.refresh_token_expires_in
+      ? new Date(issuedAt + refreshed.refresh_token_expires_in * 1000).toISOString()
+      : shopData.refreshTokenExpiresAt || null;
+
+    const nextAccessToken = refreshed.access_token;
+    const nextRefreshToken = refreshed.refresh_token || shopData.refreshToken;
+
+    await db.collection("shops").doc(targetShop).set(
+      {
+        accessToken: nextAccessToken,
+        refreshToken: nextRefreshToken,
+        accessTokenExpiresAt,
+        refreshTokenExpiresAt,
+        tokenType: "expiring_offline",
+        scope: refreshed.scope || shopData.scope || "",
+        tokenRefreshedAt: new Date().toISOString(),
+      },
+      { merge: true }
+    );
+
+    return {
+      targetShop,
+      accessToken: nextAccessToken,
+    };
+  }
+
+  return {
+    targetShop,
+    accessToken: shopData.accessToken,
+  };
+}
+
+export async function callShopifyAdminAPI(
+  query: string,
+  variables: Record<string, any> = {},
+  shop?: string
+) {
+  const { targetShop, accessToken } = await getShopifyAdminAccessToken(shop);
 
   const response = await fetch(
     `https://${targetShop}/admin/api/2025-07/graphql.json`,

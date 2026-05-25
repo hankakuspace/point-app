@@ -24,6 +24,7 @@ export async function GET(req: NextRequest) {
         client_id: process.env.SHOPIFY_API_KEY,
         client_secret: process.env.SHOPIFY_API_SECRET,
         code,
+        expiring: 1,
       }),
     });
 
@@ -38,6 +39,21 @@ export async function GET(req: NextRequest) {
 
     const tokenJson = await tokenRes.json();
     const accessToken = tokenJson.access_token;
+    const refreshToken =
+      typeof tokenJson.refresh_token === "string" ? tokenJson.refresh_token : "";
+    const expiresIn =
+      typeof tokenJson.expires_in === "number" ? tokenJson.expires_in : null;
+    const refreshTokenExpiresIn =
+      typeof tokenJson.refresh_token_expires_in === "number"
+        ? tokenJson.refresh_token_expires_in
+        : null;
+    const issuedAt = Date.now();
+    const accessTokenExpiresAt = expiresIn
+      ? new Date(issuedAt + expiresIn * 1000).toISOString()
+      : null;
+    const refreshTokenExpiresAt = refreshTokenExpiresIn
+      ? new Date(issuedAt + refreshTokenExpiresIn * 1000).toISOString()
+      : null;
     const scope = typeof tokenJson.scope === "string" ? tokenJson.scope : "";
     console.log("✅ Access token retrieved for", shop);
 
@@ -46,6 +62,10 @@ export async function GET(req: NextRequest) {
       await db.collection("shops").doc(shop).set(
         {
           accessToken,
+          refreshToken,
+          accessTokenExpiresAt,
+          refreshTokenExpiresAt,
+          tokenType: "expiring_offline",
           scope,
           installedAt: new Date().toISOString(),
         },
