@@ -181,21 +181,43 @@ export default function CustomersPage() {
   );
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const shop = params.get("shop");
+    const shop = getShopFromCurrentContext();
 
     if (shop) {
-      sessionStorage.setItem("pointman-shop", shop);
       setShopDomain(shop);
-      return;
-    }
-
-    const storedShop = sessionStorage.getItem("pointman-shop");
-
-    if (storedShop) {
-      setShopDomain(storedShop);
     }
   }, []);
+
+  const getShopFromCurrentContext = () => {
+    const params = new URLSearchParams(window.location.search);
+    const urlShop = params.get("shop") || "";
+
+    if (urlShop) {
+      sessionStorage.setItem("pointman-shop", urlShop);
+      return urlShop;
+    }
+
+    const storedShop = sessionStorage.getItem("pointman-shop") || "";
+
+    if (storedShop) {
+      return storedShop;
+    }
+
+    try {
+      const referrerUrl = new URL(document.referrer);
+      const match = referrerUrl.pathname.match(/\/store\/([^\/]+)/);
+
+      if (match?.[1]) {
+        const inferredShop = `${match[1]}.myshopify.com`;
+        sessionStorage.setItem("pointman-shop", inferredShop);
+        return inferredShop;
+      }
+    } catch (error) {
+      console.error("Failed to infer shop from referrer:", error);
+    }
+
+    return "";
+  };
 
   const getShopifySessionHeaders = async (
     baseHeaders: HeadersInit = {}
@@ -228,10 +250,7 @@ export default function CustomersPage() {
     setLoading(true);
 
     try {
-      const params = new URLSearchParams(window.location.search);
-      const urlShop = params.get("shop") || "";
-      const storedShop = sessionStorage.getItem("pointman-shop") || "";
-      const shop = urlShop || shopDomain || storedShop;
+      const shop = shopDomain || getShopFromCurrentContext();
 
       const res = await fetch(
         shop

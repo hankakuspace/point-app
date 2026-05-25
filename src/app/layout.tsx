@@ -29,6 +29,62 @@ export default function RootLayout({
     <html lang="ja">
       <head>
         <meta name="shopify-api-key" content={shopifyApiKey} />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function () {
+                if (typeof window === "undefined" || window.__pointmanShopInitialized) {
+                  return;
+                }
+
+                window.__pointmanShopInitialized = true;
+
+                var shop = "";
+
+                try {
+                  var params = new URLSearchParams(window.location.search);
+                  shop = params.get("shop") || "";
+                } catch (error) {}
+
+                if (!shop) {
+                  try {
+                    var storedShop = window.sessionStorage.getItem("pointman-shop") || "";
+                    shop = storedShop;
+                  } catch (error) {}
+                }
+
+                if (!shop) {
+                  try {
+                    var referrerUrl = new URL(document.referrer);
+                    var match = referrerUrl.pathname.match(/\/store\/([^\/]+)/);
+
+                    if (match && match[1]) {
+                      shop = match[1] + ".myshopify.com";
+                    }
+                  } catch (error) {}
+                }
+
+                if (shop) {
+                  try {
+                    window.sessionStorage.setItem("pointman-shop", shop);
+                  } catch (error) {}
+
+                  try {
+                    var appBridgeConfig = {
+                      apiKey: "${shopifyApiKey}",
+                      shop: shop
+                    };
+
+                    window.sessionStorage.setItem(
+                      "app-bridge-config",
+                      JSON.stringify(appBridgeConfig)
+                    );
+                  } catch (error) {}
+                }
+              })();
+            `,
+          }}
+        />
         <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js" />
         <script
           dangerouslySetInnerHTML={{
