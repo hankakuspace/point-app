@@ -102,7 +102,7 @@ function renderPointUseUnavailableHtml() {
 </head>
 <body>
   <div class="box">
-    <p class="label">ポイントMAN</p>
+    <p class="label">使えるポイント</p>
     <p class="title">この商品はポイント利用対象外です</p>
     <p class="text">カート内の商品はポイント利用の対象外です。ポイントを使わずにチェックアウトへお進みください。</p>
   </div>
@@ -127,7 +127,7 @@ function renderLoginHtml() {
 </head>
 <body>
   <div class="box">
-    <p class="label">ポイントMAN</p>
+    <p class="label">使えるポイント</p>
     <p class="title">ポイントを利用するにはログインが必要です</p>
     <p class="text">ログイン後、保有ポイントを確認してカートで利用できます。</p>
     <a class="button" href="/account" target="_top">ログインする</a>
@@ -169,7 +169,7 @@ export async function GET(req: Request) {
 </head>
 <body>
   <div class="box">
-    <p class="label">ポイントMAN</p>
+    <p class="label">使えるポイント</p>
     <p class="title">ポイント情報がまだ作成されていません。</p>
   </div>
 </body>
@@ -241,7 +241,7 @@ export async function GET(req: Request) {
   <div class="box">
     <div class="head">
       <div>
-        <p class="label">ポイントMAN</p>
+        <p class="label">使えるポイント</p>
         <p class="points">${points.toLocaleString()} pt</p>
       </div>
       <span class="pill">${canUse ? "利用可能" : "利用不可"}</span>

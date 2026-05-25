@@ -66,7 +66,7 @@ function renderHtml({
 <body>
   <main>
     <section class="card">
-      <p style="margin:0 0 8px;color:#6d7175;font-size:13px;">ポイントMAN</p>
+      <p style="margin:0 0 8px;color:#6d7175;font-size:13px;">使えるポイント</p>
       <h1 style="margin:0 0 16px;font-size:24px;">${title}</h1>
       <p style="margin:0;font-size:15px;line-height:1.8;">${message}</p>
 
@@ -139,7 +139,7 @@ function renderCartDiscountRedirectHtml(discountCode: string) {
 <body>
   <main>
     <section class="card">
-      <p style="margin:0 0 8px;color:#6d7175;font-size:13px;">ポイントMAN</p>
+      <p style="margin:0 0 8px;color:#6d7175;font-size:13px;">使えるポイント</p>
       <h1 style="margin:0 0 16px;font-size:24px;">割引を適用しています</h1>
       <p style="margin:0 0 16px;font-size:15px;line-height:1.8;">
         割引コード ${discountCode} を適用してチェックアウトへ移動しています。
