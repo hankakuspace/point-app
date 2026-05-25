@@ -56,7 +56,7 @@ export default function RootLayout({
                 if (!shop) {
                   try {
                     var referrerUrl = new URL(document.referrer);
-                    var match = referrerUrl.pathname.match(/\/store\/([^\/]+)/);
+                    var match = referrerUrl.pathname.match(new RegExp("/store/([^/]+)"));
 
                     if (match && match[1]) {
                       shop = match[1] + ".myshopify.com";
