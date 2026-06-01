@@ -57,6 +57,20 @@ function buildRawPairMessage(rawSearch: string) {
     .join("");
 }
 
+function buildDecodedPairMessage(rawSearch: string) {
+  if (!rawSearch) {
+    return "";
+  }
+
+  return rawSearch
+    .split("&")
+    .filter((pair) => pair && !pair.startsWith("signature="))
+    .map((pair) => decodeURIComponent(pair))
+    .sort()
+    .join("");
+}
+
+
 function buildRawGroupedMessage(rawSearch: string) {
   if (!rawSearch) {
     return "";
@@ -112,6 +126,7 @@ export function verifyShopifyAppProxySignature(input: AppProxyVerificationInput)
     new Set(
       [
         buildDecodedGroupedMessage(searchParams),
+        buildDecodedPairMessage(rawSearch),
         buildRawGroupedMessage(rawSearch),
         buildRawPairMessage(rawSearch),
       ].filter(Boolean)
