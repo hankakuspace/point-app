@@ -4,6 +4,7 @@ import { db } from "@/lib/firebaseAdmin";
 import { callShopifyAdminAPI } from "@/lib/shopify";
 import { getPointSettings } from "@/lib/point-settings";
 import { verifyPointFormToken } from "@/lib/pointFormToken";
+import { verifyShopifyAppProxySignature } from "@/lib/shopifyAppProxy";
 
 function renderHtml({
   title,
@@ -288,6 +289,14 @@ async function deactivateReissuedShopifyDiscount(
 export async function POST(req: Request) {
   try {
     const url = new URL(req.url);
+
+    if (!verifyShopifyAppProxySignature(url.searchParams)) {
+      return renderHtml({
+        title: "ポイントを利用できません",
+        message: "不正なリクエストです。カート画面からもう一度お試しください。",
+      });
+    }
+
     const shop = url.searchParams.get("shop") || "";
     const loggedInCustomerId = url.searchParams.get("logged_in_customer_id") || "";
 

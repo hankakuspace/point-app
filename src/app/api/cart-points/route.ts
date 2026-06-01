@@ -4,6 +4,7 @@ import { db } from "@/lib/firebaseAdmin";
 import { callShopifyAdminAPI } from "@/lib/shopify";
 import { getPointSettings } from "@/lib/point-settings";
 import { createPointFormToken } from "@/lib/pointFormToken";
+import { verifyShopifyAppProxySignature } from "@/lib/shopifyAppProxy";
 
 function renderHtml(html: string) {
   return new NextResponse(html, {
@@ -139,6 +140,14 @@ function renderLoginHtml() {
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
+
+  if (!verifyShopifyAppProxySignature(url.searchParams)) {
+    return NextResponse.json(
+      { ok: false, error: "Invalid app proxy signature" },
+      { status: 401 }
+    );
+  }
+
   const shop = url.searchParams.get("shop") || "";
   const customerId = url.searchParams.get("logged_in_customer_id") || "";
   const cartProductIds = (url.searchParams.get("cartProductIds") || "")
