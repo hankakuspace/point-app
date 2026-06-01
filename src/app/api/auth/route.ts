@@ -6,12 +6,10 @@ const SHOPIFY_APP_URL = process.env.SHOPIFY_APP_URL!;
 
 // 🔑 アプリで使用するShopify OAuthスコープ
 const SCOPES = [
-    "read_checkouts",
   "read_customers",
   "read_discounts",
   "read_orders",
   "read_products",
-  "write_checkouts",
   "write_customers",
   "write_discounts",
   "write_orders",
