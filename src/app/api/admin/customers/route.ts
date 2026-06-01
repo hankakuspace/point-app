@@ -27,29 +27,30 @@ function getTimestampValue(value: any) {
 
 export async function GET(req: NextRequest) {
   try {
-    const shop = req.nextUrl.searchParams.get("shop") || "";
-    const session = await requireShopifySessionToken(req, shop);
+    const requestedShop = req.nextUrl.searchParams.get("shop") || "";
+    const session = await requireShopifySessionToken(req, requestedShop);
 
     if (!session.ok) {
       return session.response;
     }
 
-    const customersQuery = shop
-      ? db.collection("customers").where("shop", "==", shop)
-      : db.collection("customers");
+    const shop = session.shop;
+
+    if (!shop) {
+      return NextResponse.json(
+        { success: false, error: "Missing shop" },
+        { status: 400 }
+      );
+    }
+
+    const customersQuery = db.collection("customers").where("shop", "==", shop);
 
     const customersSnapshot = await customersQuery.get();
 
-    const pointLogsSnapshot = shop
-      ? await db
-          .collection("point_logs")
-          .where("shop", "==", shop)
-          .get()
-      : await db
-          .collection("point_logs")
-          .orderBy("timestamp", "desc")
-          .limit(300)
-          .get();
+    const pointLogsSnapshot = await db
+      .collection("point_logs")
+      .where("shop", "==", shop)
+      .get();
 
     const sortedPointLogs = pointLogsSnapshot.docs
       .map((doc) => ({

@@ -7,16 +7,23 @@ export const runtime = "nodejs";
 
 export async function GET(req: NextRequest) {
   try {
-    const shop = req.nextUrl.searchParams.get("shop") || "";
-    const session = await requireShopifySessionToken(req, shop);
+    const requestedShop = req.nextUrl.searchParams.get("shop") || "";
+    const session = await requireShopifySessionToken(req, requestedShop);
 
     if (!session.ok) {
       return session.response;
     }
 
-    const query = shop
-      ? db.collection("point_redemptions").where("shop", "==", shop)
-      : db.collection("point_redemptions");
+    const shop = session.shop;
+
+    if (!shop) {
+      return NextResponse.json(
+        { success: false, error: "Missing shop" },
+        { status: 400 }
+      );
+    }
+
+    const query = db.collection("point_redemptions").where("shop", "==", shop);
 
     const snapshot = await query.get();
 

@@ -9,15 +9,24 @@ export async function POST(req: Request) {
     const body = await req.json();
 
     const { customerId, amount } = body;
-    const shop =
+    const requestedShop =
       typeof body.shop === "string" && body.shop.trim()
         ? body.shop.trim()
         : "";
 
-    const session = await requireShopifySessionToken(req, shop);
+    const session = await requireShopifySessionToken(req, requestedShop);
 
     if (!session.ok) {
       return session.response;
+    }
+
+    const shop = session.shop;
+
+    if (!shop) {
+      return NextResponse.json(
+        { success: false, error: "Missing shop" },
+        { status: 400 }
+      );
     }
 
     if (!customerId || typeof amount !== "number") {
@@ -39,6 +48,15 @@ export async function POST(req: Request) {
     }
 
     const customer = snapshot.data();
+    const customerShop =
+      typeof customer?.shop === "string" ? customer.shop.trim().toLowerCase() : "";
+
+    if (customerShop !== shop) {
+      return NextResponse.json(
+        { success: false, error: "Customer shop mismatch" },
+        { status: 403 }
+      );
+    }
 
     const currentPoints = customer?.points || 0;
 
@@ -46,12 +64,11 @@ export async function POST(req: Request) {
 
     await customerRef.update({
       points: newPoints,
-      ...(shop ? { shop } : {}),
     });
 
     await db.collection("point_logs").add({
       customerId,
-      shop: shop || customer?.shop || null,
+      shop,
       type: amount > 0 ? "add" : "use",
       points: Math.abs(amount),
       reason: "admin_edit",

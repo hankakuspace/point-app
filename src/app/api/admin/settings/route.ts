@@ -6,11 +6,20 @@ import { requireShopifySessionToken } from "@/lib/shopifySessionToken";
 
 export async function GET(req: NextRequest) {
   try {
-    const shop = req.nextUrl.searchParams.get("shop") || "";
-    const session = await requireShopifySessionToken(req, shop);
+    const requestedShop = req.nextUrl.searchParams.get("shop") || "";
+    const session = await requireShopifySessionToken(req, requestedShop);
 
     if (!session.ok) {
       return session.response;
+    }
+
+    const shop = session.shop;
+
+    if (!shop) {
+      return NextResponse.json(
+        { success: false, error: "Missing shop" },
+        { status: 400 }
+      );
     }
 
     const settings = await getPointSettings(db, shop);
@@ -25,15 +34,24 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const shop =
+    const requestedShop =
       typeof body.shop === "string" && body.shop.trim()
         ? body.shop.trim()
         : req.nextUrl.searchParams.get("shop") || "";
 
-    const session = await requireShopifySessionToken(req, shop);
+    const session = await requireShopifySessionToken(req, requestedShop);
 
     if (!session.ok) {
       return session.response;
+    }
+
+    const shop = session.shop;
+
+    if (!shop) {
+      return NextResponse.json(
+        { success: false, error: "Missing shop" },
+        { status: 400 }
+      );
     }
 
     const data = {

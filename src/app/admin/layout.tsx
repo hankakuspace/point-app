@@ -44,15 +44,17 @@ export default async function AdminLayout({
   const headersList = await headers();
   const shop = getShopFromHeaders(headersList);
 
-  if (shop) {
-    const shopSnap = await db.collection("shops").doc(shop).get();
-    const shopData = shopSnap.exists ? shopSnap.data() : null;
-    const accessToken =
-      typeof shopData?.accessToken === "string" ? shopData.accessToken : "";
+  if (!shop) {
+    redirect("/api/auth");
+  }
 
-    if (!accessToken) {
-      redirect(`/api/auth?shop=${encodeURIComponent(shop)}`);
-    }
+  const shopSnap = await db.collection("shops").doc(shop).get();
+  const shopData = shopSnap.exists ? shopSnap.data() : null;
+  const accessToken =
+    typeof shopData?.accessToken === "string" ? shopData.accessToken : "";
+
+  if (!accessToken) {
+    redirect(`/api/auth?shop=${encodeURIComponent(shop)}`);
   }
 
   return <AdminShell>{children}</AdminShell>;
