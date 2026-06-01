@@ -174,6 +174,7 @@ export function verifyShopifyAppProxySignature(input: AppProxyVerificationInput)
 
   console.warn("App Proxy signature mismatch", {
     keys,
+    candidateMessages,
     messageLengths: candidateMessages.map((message) => message.length),
     signaturePrefix: signature.slice(0, 8),
     digestPrefix: firstDigest.slice(0, 8),
