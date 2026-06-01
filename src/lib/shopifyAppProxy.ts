@@ -12,6 +12,25 @@ function timingSafeEqualString(a: string, b: string) {
   return crypto.timingSafeEqual(aBuffer, bBuffer);
 }
 
+function buildAppProxySignatureMessage(searchParams: URLSearchParams) {
+  const params = new Map<string, string[]>();
+
+  for (const [key, value] of searchParams.entries()) {
+    if (key === "signature") {
+      continue;
+    }
+
+    const values = params.get(key) || [];
+    values.push(value);
+    params.set(key, values);
+  }
+
+  return Array.from(params.entries())
+    .map(([key, values]) => `${key}=${values.join(",")}`)
+    .sort()
+    .join("");
+}
+
 export function verifyShopifyAppProxySignature(searchParams: URLSearchParams) {
   const signature = searchParams.get("signature") || "";
   const secret = process.env.SHOPIFY_API_SECRET || "";
@@ -20,11 +39,7 @@ export function verifyShopifyAppProxySignature(searchParams: URLSearchParams) {
     return false;
   }
 
-  const message = Array.from(searchParams.entries())
-    .filter(([key]) => key !== "signature")
-    .map(([key, value]) => `${key}=${value}`)
-    .sort()
-    .join("");
+  const message = buildAppProxySignatureMessage(searchParams);
 
   const digest = crypto
     .createHmac("sha256", secret)
