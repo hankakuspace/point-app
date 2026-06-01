@@ -102,6 +102,17 @@ export default async function Home({ searchParams }: HomePageProps) {
   }
 
   if (!loggedInCustomerId) {
+    if (shop) {
+      const shopSnap = await db.collection("shops").doc(shop).get();
+      const shopData = shopSnap.exists ? shopSnap.data() : null;
+      const accessToken =
+        typeof shopData?.accessToken === "string" ? shopData.accessToken : "";
+
+      if (!accessToken) {
+        redirect(`/api/auth?shop=${encodeURIComponent(shop)}`);
+      }
+    }
+
     const redirectParams = new URLSearchParams();
 
     if (shop) {
