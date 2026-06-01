@@ -141,7 +141,7 @@ function renderLoginHtml() {
 export async function GET(req: Request) {
   const url = new URL(req.url);
 
-  if (!verifyShopifyAppProxySignature(url.searchParams)) {
+  if (!verifyShopifyAppProxySignature(url)) {
     return NextResponse.json(
       { ok: false, error: "Invalid app proxy signature" },
       { status: 401 }

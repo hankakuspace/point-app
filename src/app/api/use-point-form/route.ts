@@ -290,7 +290,7 @@ export async function POST(req: Request) {
   try {
     const url = new URL(req.url);
 
-    if (!verifyShopifyAppProxySignature(url.searchParams)) {
+    if (!verifyShopifyAppProxySignature(url)) {
       return renderHtml({
         title: "ポイントを利用できません",
         message: "不正なリクエストです。カート画面からもう一度お試しください。",

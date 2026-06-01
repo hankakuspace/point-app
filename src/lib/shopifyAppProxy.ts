@@ -1,6 +1,8 @@
 // src/lib/shopifyAppProxy.ts
 import crypto from "crypto";
 
+type AppProxyVerificationInput = URL | URLSearchParams;
+
 function timingSafeEqualString(a: string, b: string) {
   const aBuffer = Buffer.from(a, "utf8");
   const bBuffer = Buffer.from(b, "utf8");
@@ -12,7 +14,19 @@ function timingSafeEqualString(a: string, b: string) {
   return crypto.timingSafeEqual(aBuffer, bBuffer);
 }
 
-function buildAppProxySignatureMessage(searchParams: URLSearchParams) {
+function getSearchParams(input: AppProxyVerificationInput) {
+  return input instanceof URL ? input.searchParams : input;
+}
+
+function getRawSearch(input: AppProxyVerificationInput) {
+  if (!(input instanceof URL)) {
+    return "";
+  }
+
+  return input.search.startsWith("?") ? input.search.slice(1) : input.search;
+}
+
+function buildDecodedGroupedMessage(searchParams: URLSearchParams) {
   const params = new Map<string, string[]>();
 
   for (const [key, value] of searchParams.entries()) {
@@ -31,10 +45,57 @@ function buildAppProxySignatureMessage(searchParams: URLSearchParams) {
     .join("");
 }
 
-export function verifyShopifyAppProxySignature(searchParams: URLSearchParams) {
+function buildRawPairMessage(rawSearch: string) {
+  if (!rawSearch) {
+    return "";
+  }
+
+  return rawSearch
+    .split("&")
+    .filter((pair) => pair && !pair.startsWith("signature="))
+    .sort()
+    .join("");
+}
+
+function buildRawGroupedMessage(rawSearch: string) {
+  if (!rawSearch) {
+    return "";
+  }
+
+  const params = new Map<string, string[]>();
+
+  for (const pair of rawSearch.split("&")) {
+    if (!pair || pair.startsWith("signature=")) {
+      continue;
+    }
+
+    const equalIndex = pair.indexOf("=");
+    const key = equalIndex >= 0 ? pair.slice(0, equalIndex) : pair;
+    const value = equalIndex >= 0 ? pair.slice(equalIndex + 1) : "";
+
+    const values = params.get(key) || [];
+    values.push(value);
+    params.set(key, values);
+  }
+
+  return Array.from(params.entries())
+    .map(([key, values]) => `${key}=${values.join(",")}`)
+    .sort()
+    .join("");
+}
+
+function createDigest(message: string, secret: string) {
+  return crypto
+    .createHmac("sha256", secret)
+    .update(message)
+    .digest("hex");
+}
+
+export function verifyShopifyAppProxySignature(input: AppProxyVerificationInput) {
+  const searchParams = getSearchParams(input);
+  const rawSearch = getRawSearch(input);
   const signature = searchParams.get("signature") || "";
   const secret = process.env.SHOPIFY_API_SECRET || "";
-
   const keys = Array.from(new Set(Array.from(searchParams.keys()))).sort();
 
   if (!signature || !secret) {
@@ -47,23 +108,34 @@ export function verifyShopifyAppProxySignature(searchParams: URLSearchParams) {
     return false;
   }
 
-  const message = buildAppProxySignatureMessage(searchParams);
+  const candidateMessages = Array.from(
+    new Set(
+      [
+        buildDecodedGroupedMessage(searchParams),
+        buildRawGroupedMessage(rawSearch),
+        buildRawPairMessage(rawSearch),
+      ].filter(Boolean)
+    )
+  );
 
-  const digest = crypto
-    .createHmac("sha256", secret)
-    .update(message)
-    .digest("hex");
+  for (const message of candidateMessages) {
+    const digest = createDigest(message, secret);
 
-  const valid = timingSafeEqualString(digest, signature);
-
-  if (!valid) {
-    console.warn("App Proxy signature mismatch", {
-      keys,
-      messageLength: message.length,
-      signaturePrefix: signature.slice(0, 8),
-      digestPrefix: digest.slice(0, 8),
-    });
+    if (timingSafeEqualString(digest, signature)) {
+      return true;
+    }
   }
 
-  return valid;
+  const firstDigest = candidateMessages[0]
+    ? createDigest(candidateMessages[0], secret)
+    : "";
+
+  console.warn("App Proxy signature mismatch", {
+    keys,
+    messageLengths: candidateMessages.map((message) => message.length),
+    signaturePrefix: signature.slice(0, 8),
+    digestPrefix: firstDigest.slice(0, 8),
+  });
+
+  return false;
 }
