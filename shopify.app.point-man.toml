@@ -24,6 +24,10 @@ uri = "https://point-app-gamma.vercel.app/api/webhooks/shop/redact"
 topics = [ "orders/paid" ]
 uri = "https://point-app-gamma.vercel.app/api/webhooks/orders/paid"
 
+[[webhooks.subscriptions]]
+topics = [ "app/uninstalled" ]
+uri = "https://point-app-gamma.vercel.app/api/webhooks/app/uninstalled"
+
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
 scopes = "read_customers,read_discounts,write_discounts,read_orders,read_products"
