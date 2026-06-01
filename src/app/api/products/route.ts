@@ -1,12 +1,15 @@
 // src/app/api/products/route.ts
 import { NextResponse } from "next/server";
-import { getFirestore } from "firebase-admin/firestore";
-import { db } from "@/lib/firebase";
+import { callShopifyAdminAPI } from "@/lib/shopify";
 
+function getNumericId(gid: string) {
+  const parts = gid.split("/");
+  const last = parts[parts.length - 1];
+  return Number(last);
+}
 
 export async function GET(req: Request) {
   try {
-    // クエリから shop を取得（例: /api/products?shop=ruhra-store.myshopify.com）
     const { searchParams } = new URL(req.url);
     const shop = searchParams.get("shop");
 
@@ -14,44 +17,75 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Missing shop parameter" }, { status: 400 });
     }
 
-    // Firestore からアクセストークンを取得
-    const db = getFirestore();
-    const shopDoc = await db.collection("shops").doc(shop).get();
-
-    if (!shopDoc.exists) {
-      return NextResponse.json({ error: "Shop not found" }, { status: 404 });
-    }
-
-    const { accessToken } = shopDoc.data() as { accessToken: string };
-
-    if (!accessToken) {
-      return NextResponse.json({ error: "Access token not found" }, { status: 401 });
-    }
-
-    // Shopify Admin API を呼び出す
-    const response = await fetch(
-      `https://${shop}/admin/api/2025-01/products.json`,
-      {
-        method: "GET",
-        headers: {
-          "X-Shopify-Access-Token": accessToken,
-          "Content-Type": "application/json",
-        },
+    const query = `
+      query ProductsForPointMan($first: Int!) {
+        products(first: $first, sortKey: TITLE) {
+          edges {
+            node {
+              id
+              title
+              handle
+              vendor
+              productType
+              status
+              tags
+              createdAt
+              updatedAt
+              featuredImage {
+                url
+                altText
+              }
+              variants(first: 1) {
+                edges {
+                  node {
+                    id
+                    price
+                  }
+                }
+              }
+            }
+          }
+        }
       }
-    );
+    `;
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      return NextResponse.json(
-        { error: "Shopify API error", details: errorText },
-        { status: response.status }
-      );
-    }
+    const data = await callShopifyAdminAPI(query, { first: 250 }, shop);
+    const edges = data?.products?.edges || [];
 
-    const data = await response.json();
+    const products = edges.map((edge: any) => {
+      const product = edge.node;
+      const firstVariant = product.variants?.edges?.[0]?.node || null;
 
-    // 取得した商品データをそのまま返す
-    return NextResponse.json(data, { status: 200 });
+      return {
+        id: getNumericId(product.id),
+        admin_graphql_api_id: product.id,
+        title: product.title,
+        handle: product.handle,
+        vendor: product.vendor,
+        product_type: product.productType,
+        status: String(product.status || "").toLowerCase(),
+        tags: Array.isArray(product.tags) ? product.tags.join(", ") : "",
+        created_at: product.createdAt,
+        updated_at: product.updatedAt,
+        image: product.featuredImage
+          ? {
+              src: product.featuredImage.url,
+              alt: product.featuredImage.altText || null,
+            }
+          : null,
+        variants: firstVariant
+          ? [
+              {
+                id: getNumericId(firstVariant.id),
+                admin_graphql_api_id: firstVariant.id,
+                price: firstVariant.price,
+              },
+            ]
+          : [],
+      };
+    });
+
+    return NextResponse.json({ products }, { status: 200 });
   } catch (error: any) {
     console.error("API Error:", error);
     return NextResponse.json(

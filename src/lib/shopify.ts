@@ -51,13 +51,34 @@ export const shopify = shopifyApi({
  * ✅ 注文支払い完了Webhook登録
  */
 export async function registerOrderPaidWebhook(shop: string, accessToken: string) {
-  const endpoint = `https://${shop}/admin/api/2025-07/webhooks.json`;
+  const endpoint = `https://${shop}/admin/api/2025-07/graphql.json`;
 
-  const body = {
-    webhook: {
-      topic: "orders/paid",
-      address: `${process.env.SHOPIFY_APP_URL}/api/webhooks/orders/paid`,
-      format: "json",
+  const mutation = `
+    mutation WebhookSubscriptionCreate($topic: WebhookSubscriptionTopic!, $webhookSubscription: WebhookSubscriptionInput!) {
+      webhookSubscriptionCreate(topic: $topic, webhookSubscription: $webhookSubscription) {
+        webhookSubscription {
+          id
+          topic
+          endpoint {
+            __typename
+            ... on WebhookHttpEndpoint {
+              callbackUrl
+            }
+          }
+        }
+        userErrors {
+          field
+          message
+        }
+      }
+    }
+  `;
+
+  const variables = {
+    topic: "ORDERS_PAID",
+    webhookSubscription: {
+      callbackUrl: `${process.env.SHOPIFY_APP_URL}/api/webhooks/orders/paid`,
+      format: "JSON",
     },
   };
 
@@ -68,20 +89,31 @@ export async function registerOrderPaidWebhook(shop: string, accessToken: string
         "X-Shopify-Access-Token": accessToken,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify({
+        query: mutation,
+        variables,
+      }),
     });
 
+    const result = await response.json();
+
     if (!response.ok) {
-      const text = await response.text();
       console.error("❌ Webhook registration failed:", response.status, response.statusText);
-      console.error("Response text:", text);
-      return { error: text, status: response.status };
+      console.error("Response JSON:", JSON.stringify(result, null, 2));
+      return { error: JSON.stringify(result), status: response.status };
     }
 
-    const result = await response.json();
-    console.log("📦 Webhook registration result:", JSON.stringify(result, null, 2));
+    const payload = result?.data?.webhookSubscriptionCreate;
+    const userErrors = payload?.userErrors || [];
 
-    return result;
+    if (userErrors.length > 0) {
+      console.error("❌ Webhook registration userErrors:", JSON.stringify(userErrors, null, 2));
+      return { error: JSON.stringify(userErrors), status: 422 };
+    }
+
+    console.log("📦 Webhook registration result:", JSON.stringify(payload, null, 2));
+
+    return payload;
   } catch (error: any) {
     console.error("💥 registerOrderPaidWebhook Error:", error.message);
     return { error: error.message };
