@@ -35,7 +35,15 @@ export function verifyShopifyAppProxySignature(searchParams: URLSearchParams) {
   const signature = searchParams.get("signature") || "";
   const secret = process.env.SHOPIFY_API_SECRET || "";
 
+  const keys = Array.from(new Set(Array.from(searchParams.keys()))).sort();
+
   if (!signature || !secret) {
+    console.warn("App Proxy signature missing", {
+      hasSignature: Boolean(signature),
+      hasSecret: Boolean(secret),
+      keys,
+    });
+
     return false;
   }
 
@@ -46,5 +54,16 @@ export function verifyShopifyAppProxySignature(searchParams: URLSearchParams) {
     .update(message)
     .digest("hex");
 
-  return timingSafeEqualString(digest, signature);
+  const valid = timingSafeEqualString(digest, signature);
+
+  if (!valid) {
+    console.warn("App Proxy signature mismatch", {
+      keys,
+      messageLength: message.length,
+      signaturePrefix: signature.slice(0, 8),
+      digestPrefix: digest.slice(0, 8),
+    });
+  }
+
+  return valid;
 }
