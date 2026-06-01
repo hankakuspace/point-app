@@ -1,7 +1,6 @@
 // src/app/api/auth/callback/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/firebase";
-import { registerOrderPaidWebhook } from "@/lib/shopify";
 
 export const runtime = "nodejs";
 
@@ -76,14 +75,7 @@ export async function GET(req: NextRequest) {
       console.error("❌ Firestore update failed:", e);
     }
 
-    // ✅ ③ Webhook登録を失敗しても無視
-    try {
-      await registerOrderPaidWebhook(shop, accessToken);
-      console.log("✅ Webhook registered");
-    } catch (e) {
-      console.warn("⚠️ Webhook registration failed:", e);
-    }
-
+    // ✅ ③ orders/paid Webhook は shopify.app.toml の app-specific subscription で管理
     // ✅ ④ リダイレクト
     return NextResponse.redirect(
       `${process.env.SHOPIFY_APP_URL}/admin/customers?host=${host}&shop=${shop}`

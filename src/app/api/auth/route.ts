@@ -10,7 +10,6 @@ const SCOPES = [
   "read_discounts",
   "read_orders",
   "read_products",
-  "write_customers",
   "write_discounts",
 ];
 
