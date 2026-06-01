@@ -35,6 +35,12 @@ const adminNavItems = [
     match: "/admin/redemptions",
     icon: AppsIcon,
   },
+  {
+    url: "/admin/setup",
+    label: "セットアップ",
+    match: "/admin/setup",
+    icon: SettingsIcon,
+  },
 ];
 
 export default function AdminNav() {
