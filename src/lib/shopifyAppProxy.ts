@@ -70,6 +70,31 @@ function buildDecodedPairMessage(rawSearch: string) {
     .join("");
 }
 
+function buildDecodedPairAmpersandMessage(rawSearch: string) {
+  if (!rawSearch) {
+    return "";
+  }
+
+  return rawSearch
+    .split("&")
+    .filter((pair) => pair && !pair.startsWith("signature="))
+    .map((pair) => decodeURIComponent(pair))
+    .sort()
+    .join("&");
+}
+
+function buildRawPairAmpersandMessage(rawSearch: string) {
+  if (!rawSearch) {
+    return "";
+  }
+
+  return rawSearch
+    .split("&")
+    .filter((pair) => pair && !pair.startsWith("signature="))
+    .sort()
+    .join("&");
+}
+
 
 function buildRawGroupedMessage(rawSearch: string) {
   if (!rawSearch) {
@@ -127,8 +152,10 @@ export function verifyShopifyAppProxySignature(input: AppProxyVerificationInput)
       [
         buildDecodedGroupedMessage(searchParams),
         buildDecodedPairMessage(rawSearch),
+        buildDecodedPairAmpersandMessage(rawSearch),
         buildRawGroupedMessage(rawSearch),
         buildRawPairMessage(rawSearch),
+        buildRawPairAmpersandMessage(rawSearch),
       ].filter(Boolean)
     )
   );
