@@ -12,7 +12,6 @@ const SCOPES = [
   "read_products",
   "write_customers",
   "write_discounts",
-  "write_orders",
 ];
 
 export async function GET(req: NextRequest) {
