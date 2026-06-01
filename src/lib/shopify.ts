@@ -40,7 +40,7 @@ export const shopify = shopifyApi({
   apiSecretKey: process.env.SHOPIFY_API_SECRET!,
   scopes: process.env.SCOPES
     ? process.env.SCOPES.split(",")
-    : ["read_checkouts", "write_checkouts", "read_discounts", "write_discounts"],
+    : ["read_discounts", "write_discounts"],
   hostName: process.env.SHOPIFY_APP_URL!.replace(/^https?:\/\//, ""),
   isEmbeddedApp: true,
   apiVersion: LATEST_API_VERSION,
