@@ -1,7 +1,5 @@
 {
   "dependencies": {
-    "@shopify/app-bridge-react": "^3.7.10",
-    "@shopify/app-bridge-utils": "^3.5.1",
     "@shopify/polaris": "^13.9.5",
     "@shopify/shopify-api": "^11.14.1",
     "@tailwindcss/postcss": "^4.1.12",
