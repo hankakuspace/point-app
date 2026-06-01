@@ -1,125 +1,53 @@
 // src/app/admin/layout.tsx
-"use client";
+import { redirect } from "next/navigation";
+import { headers } from "next/headers";
+import { db } from "@/lib/firebase";
+import AdminShell from "./AdminShell";
 
-import { Suspense, useEffect } from "react";
-import "@shopify/polaris/build/esm/styles.css";
+export const dynamic = "force-dynamic";
 
-import {
-  AppProvider,
-  Frame,
-} from "@shopify/polaris";
+function getShopFromHeaders(headersList: Headers) {
+  const nextUrl = headersList.get("x-url") || "";
+  const invokePath = headersList.get("x-invoke-path") || "";
+  const matchedPath = headersList.get("x-matched-path") || "";
 
-import AdminNav from "./AdminNav";
+  const candidates = [nextUrl, invokePath, matchedPath].filter(Boolean);
 
-function getShopFromAdminContext() {
-  if (typeof window === "undefined") {
-    return "";
+  for (const candidate of candidates) {
+    try {
+      const url = candidate.startsWith("http")
+        ? new URL(candidate)
+        : new URL(candidate, "https://point-app-gamma.vercel.app");
+
+      const shop = url.searchParams.get("shop") || "";
+
+      if (shop) {
+        return shop;
+      }
+    } catch (error) {}
   }
-
-  try {
-    const params = new URLSearchParams(window.location.search);
-    const urlShop = params.get("shop") || "";
-
-    if (urlShop) {
-      window.sessionStorage.setItem("pointman-shop", urlShop);
-      return urlShop;
-    }
-  } catch (error) {}
-
-  try {
-    const storedShop = window.sessionStorage.getItem("pointman-shop") || "";
-
-    if (storedShop) {
-      return storedShop;
-    }
-  } catch (error) {}
-
-  try {
-    const referrerUrl = new URL(document.referrer);
-    const match = referrerUrl.pathname.match(new RegExp("/store/([^/]+)"));
-
-    if (match && match[1]) {
-      const inferredShop = `${match[1]}.myshopify.com`;
-      window.sessionStorage.setItem("pointman-shop", inferredShop);
-      return inferredShop;
-    }
-  } catch (error) {}
 
   return "";
 }
 
-export default function AdminLayout({
+export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  useEffect(() => {
-    let cancelled = false;
+  const headersList = headers();
+  const shop = getShopFromHeaders(headersList);
 
-    const ensureOAuth = async () => {
-      const shop = getShopFromAdminContext();
+  if (shop) {
+    const shopSnap = await db.collection("shops").doc(shop).get();
+    const shopData = shopSnap.exists ? shopSnap.data() : null;
+    const accessToken =
+      typeof shopData?.accessToken === "string" ? shopData.accessToken : "";
 
-      if (!shop) {
-        return;
-      }
+    if (!accessToken) {
+      redirect(`/api/auth?shop=${encodeURIComponent(shop)}`);
+    }
+  }
 
-      try {
-        const shopifyWindow = window as typeof window & {
-          shopify?: {
-            idToken?: () => Promise<string>;
-          };
-        };
-
-        if (typeof shopifyWindow.shopify?.idToken !== "function") {
-          setTimeout(() => {
-            if (!cancelled) {
-              window.location.href = `/api/auth?shop=${encodeURIComponent(shop)}`;
-            }
-          }, 1500);
-          return;
-        }
-
-        const token = await shopifyWindow.shopify.idToken();
-
-        if (!token && !cancelled) {
-          window.location.href = `/api/auth?shop=${encodeURIComponent(shop)}`;
-        }
-      } catch (error) {
-        if (!cancelled) {
-          window.location.href = `/api/auth?shop=${encodeURIComponent(shop)}`;
-        }
-      }
-    };
-
-    ensureOAuth();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  return (
-    <AppProvider i18n={{}}>
-      <Frame>
-        <div
-          style={{
-            minHeight: "100vh",
-            background: "#f6f6f7",
-          }}
-        >
-          <Suspense fallback={null}>
-            <AdminNav />
-          </Suspense>
-
-          <div
-            style={{
-              padding: "20px",
-            }}
-          >
-            {children}
-          </div>
-        </div>
-      </Frame>
-    </AppProvider>
-  );
+  return <AdminShell>{children}</AdminShell>;
 }
