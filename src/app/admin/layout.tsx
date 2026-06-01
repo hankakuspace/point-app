@@ -6,7 +6,7 @@ import AdminShell from "./AdminShell";
 
 export const dynamic = "force-dynamic";
 
-function getShopFromHeaders(headersList: Headers) {
+function getShopFromHeaders(headersList: { get(name: string): string | null }) {
   const nextUrl = headersList.get("x-url") || "";
   const invokePath = headersList.get("x-invoke-path") || "";
   const matchedPath = headersList.get("x-matched-path") || "";
@@ -35,7 +35,7 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const headersList = headers();
+  const headersList = await headers();
   const shop = getShopFromHeaders(headersList);
 
   if (shop) {
