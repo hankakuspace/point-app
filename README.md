@@ -1,36 +1,63 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Point MAN
 
-## Getting Started
+Point MAN は、Shopify ストア向けのポイント管理アプリです。
 
-First, run the development server:
+## 主な機能
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- 顧客ごとのポイント残高管理
+- 購入完了時のポイント付与
+- カート画面でのポイント表示
+- ポイント利用による割引コード発行
+- 顧客管理、ポイント履歴、利用コード、付与設定の管理
+- GDPR Webhook 対応
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## ストアフロント導入
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Point MAN は Shopify App Proxy を利用して、カート画面にポイント表示とポイント利用フォームを表示します。
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+App Proxy 設定:
+- prefix: apps
+- subpath: apps
+- url: https://point-app-gamma.vercel.app
 
-## Learn More
+カート画面では以下の App Proxy URL を呼び出します。
 
-To learn more about Next.js, take a look at the following resources:
+https://{shop-domain}/apps/apps/api/cart-points
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+必要なクエリ:
+- logged_in_customer_id={Shopify customer id}
+- cartProductIds={comma separated product ids}
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Shopify が App Proxy 経由で shop、path_prefix、timestamp、signature を付与し、アプリ側では signature を検証します。
 
-## Deploy on Vercel
+## ポイント利用フロー
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. 顧客がストアにログインします。
+2. カート画面で App Proxy 経由の cart-points を読み込みます。
+3. アプリは App Proxy 署名を検証します。
+4. 顧客のポイント残高と利用フォームを表示します。
+5. use-point-form で署名と pointFormToken を検証します。
+6. Shopify Admin GraphQL API で割引コードを発行します。
+7. 顧客を割引適用済みのチェックアウトへ誘導します。
+8. 注文完了後、orders/paid Webhook によりポイントを付与します。
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 管理画面
+
+Shopify 管理画面内の Point MAN アプリで、顧客管理、ポイント履歴、ポイント付与設定、ポイント利用コード、セットアップを確認できます。
+
+/admin/setup では、App Proxy の確認、カートへの設置方法、テスト手順を確認できます。
+
+## 審査・動作確認項目
+
+- cart-points が 200 で返ること
+- カート画面にポイントMANパネルが表示されること
+- ポイント利用フォームが表示されること
+- ポイント利用後に割引コードが発行されること
+- チェックアウトへ遷移すること
+- 注文完了後にポイントが付与されること
+- 管理APIが Shopify session token なしで取得できないこと
+- GDPR Webhook が HMAC なしで拒否されること
+
+## デプロイ
+
+Vercel の GitHub 連携により、main ブランチへの push で自動デプロイされます。
