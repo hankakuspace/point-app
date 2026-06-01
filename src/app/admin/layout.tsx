@@ -7,11 +7,17 @@ import AdminShell from "./AdminShell";
 export const dynamic = "force-dynamic";
 
 function getShopFromHeaders(headersList: { get(name: string): string | null }) {
+  const pointmanCurrentUrl = headersList.get("x-pointman-current-url") || "";
   const nextUrl = headersList.get("x-url") || "";
   const invokePath = headersList.get("x-invoke-path") || "";
   const matchedPath = headersList.get("x-matched-path") || "";
 
-  const candidates = [nextUrl, invokePath, matchedPath].filter(Boolean);
+  const candidates = [
+    pointmanCurrentUrl,
+    nextUrl,
+    invokePath,
+    matchedPath,
+  ].filter(Boolean);
 
   for (const candidate of candidates) {
     try {
