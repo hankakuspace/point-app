@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Timestamp } from 'firebase-admin/firestore';
 import { db } from '@/lib/firebase';
+import { requireShopifySessionToken } from "@/lib/shopifySessionToken";
 
 function getTimestampValue(value: any) {
   if (!value) {
@@ -36,6 +37,19 @@ export async function GET(req: NextRequest) {
     const orderId = searchParams.get('orderId') || '';
     const startDate = searchParams.get('startDate') || '';
     const endDate = searchParams.get('endDate') || '';
+
+    if (!shop) {
+      return NextResponse.json(
+        { success: false, error: "Missing shop" },
+        { status: 400 }
+      );
+    }
+
+    const session = await requireShopifySessionToken(req, shop);
+
+    if (!session.ok) {
+      return session.response;
+    }
 
     let queryRef: FirebaseFirestore.Query = db.collection('point_logs');
 

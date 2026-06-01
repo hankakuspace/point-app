@@ -1,6 +1,7 @@
 // src/app/api/products/route.ts
 import { NextResponse } from "next/server";
 import { callShopifyAdminAPI } from "@/lib/shopify";
+import { requireShopifySessionToken } from "@/lib/shopifySessionToken";
 
 function getNumericId(gid: string) {
   const parts = gid.split("/");
@@ -15,6 +16,12 @@ export async function GET(req: Request) {
 
     if (!shop) {
       return NextResponse.json({ error: "Missing shop parameter" }, { status: 400 });
+    }
+
+    const session = await requireShopifySessionToken(req, shop);
+
+    if (!session.ok) {
+      return session.response;
     }
 
     const query = `

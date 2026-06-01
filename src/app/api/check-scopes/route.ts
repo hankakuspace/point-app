@@ -1,6 +1,7 @@
 // src/app/api/check-scopes/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/firebaseAdmin";
+import { requireShopifySessionToken } from "@/lib/shopifySessionToken";
 
 export async function GET(req: NextRequest) {
   const shop = req.nextUrl.searchParams.get("shop") || "";
@@ -10,6 +11,12 @@ export async function GET(req: NextRequest) {
       { ok: false, error: "Missing shop" },
       { status: 400 }
     );
+  }
+
+  const session = await requireShopifySessionToken(req, shop);
+
+  if (!session.ok) {
+    return session.response;
   }
 
   try {
