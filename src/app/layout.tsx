@@ -29,6 +29,7 @@ export default function RootLayout({
     <html lang="ja">
       <head>
         <meta name="shopify-api-key" content={shopifyApiKey} />
+        <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js" />
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -103,7 +104,6 @@ export default function RootLayout({
             `,
           }}
         />
-        <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js" />
         <script
           dangerouslySetInnerHTML={{
             __html: `
