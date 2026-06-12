@@ -158,8 +158,15 @@ export async function POST(req: Request) {
           .filter(Boolean)
       : [];
 
+    const pointDiscount = Array.isArray(payload.discount_codes)
+      ? payload.discount_codes.find((discount) =>
+          String(discount.code ?? "").trim().startsWith("POINT-")
+        )
+      : undefined;
+
     const pointDiscountCode =
       discountCodes.find((code) => code.startsWith("POINT-")) || "";
+    const pointDiscountAmount = parsePrice(pointDiscount?.amount);
 
     if (!orderId) {
       console.warn("Webhook skipped: missing order id");
@@ -329,7 +336,7 @@ export async function POST(req: Request) {
       calculationBase = eligibleSubtotal + shippingAmount;
     }
 
-    const addPoints = Math.floor(calculationBase * pointRate);
+    const originalCalculationBase = calculationBase;
 
     let redemptionRef:
       | FirebaseFirestore.DocumentReference<FirebaseFirestore.DocumentData>
@@ -358,12 +365,21 @@ export async function POST(req: Request) {
       }
     }
 
+    const pointDiscountDeduction =
+      pointDiscountAmount > 0 ? pointDiscountAmount : redemptionPoints;
+    calculationBase = Math.max(calculationBase - pointDiscountDeduction, 0);
+
+    const addPoints = Math.floor(calculationBase * pointRate);
+
     if (addPoints <= 0 && redemptionPoints <= 0) {
       console.log("Webhook skipped: calculated points are zero", {
         orderId,
         totalPrice,
         subtotalPrice,
         calculationBase,
+        originalCalculationBase,
+        pointDiscountAmount,
+        pointDiscountDeduction,
         includeShipping,
         pointRate,
         excludedTags,
@@ -425,6 +441,9 @@ export async function POST(req: Request) {
           totalPrice,
           subtotalPrice,
           calculationBase,
+          originalCalculationBase,
+          pointDiscountAmount,
+          pointDiscountDeduction,
           includeShipping,
           pointRate,
           excludedTags,
@@ -468,6 +487,9 @@ export async function POST(req: Request) {
       email,
       addPoints,
       calculationBase,
+      originalCalculationBase,
+      pointDiscountAmount,
+      pointDiscountDeduction,
       excludedTags,
       excludedLineItemsSubtotal,
       eligibleLineItemsSubtotal,
