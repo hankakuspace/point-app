@@ -18,14 +18,14 @@ export default function PointsPage() {
         <h1>ポイントMAN ストアフロント導入</h1>
 
         <p>
-          ポイントMANのストアフロント表示は、Shopify App Proxy経由の
+          ポイントMANのストアフロント表示は、Theme App Extension の Point MAN points ブロックと Shopify App Proxy 経由の
           <code> /apps/apps/api/cart-points </code>
           を利用します。
         </p>
 
         <p>
           Shopify管理画面内のポイントMANアプリで「セットアップ」ページを開くと、
-          App Proxy URL、カートへの設置方法、テスト手順を確認できます。
+          Theme App Extension の有効化手順、App Proxy URL、テスト手順を確認できます。
         </p>
 
         <h2>App Proxy URL</h2>
@@ -43,9 +43,9 @@ export default function PointsPage() {
         </pre>
 
         <p>
-          カート画面では、ログイン顧客IDとカート内の商品IDを含めて
-          App Proxy URLを呼び出します。アプリ側ではShopifyが付与する
-          App Proxy署名を検証します。
+          テーマエディタで Point MAN points ブロックをカートページに追加すると、
+          ブロックがログイン顧客IDとカート内の商品IDを含めて App Proxy URLを読み込みます。
+          アプリ側ではShopifyが付与する App Proxy署名を検証します。
         </p>
       </section>
     </main>

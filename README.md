@@ -13,14 +13,14 @@ Point MAN は、Shopify ストア向けのポイント管理アプリです。
 
 ## ストアフロント導入
 
-Point MAN は Shopify App Proxy を利用して、カート画面にポイント表示とポイント利用フォームを表示します。
+Point MAN は Theme App Extension と Shopify App Proxy を利用して、カート画面にポイント表示とポイント利用フォームを表示します。
 
 App Proxy 設定:
 - prefix: apps
 - subpath: apps
 - url: https://point-app-gamma.vercel.app
 
-カート画面では以下の App Proxy URL を呼び出します。
+テーマエディタで Point MAN points ブロックをカートページに追加すると、ブロック内から以下の App Proxy URL を読み込みます。
 
 https://{shop-domain}/apps/apps/api/cart-points
 
@@ -29,6 +29,13 @@ https://{shop-domain}/apps/apps/api/cart-points
 - cartProductIds={comma separated product ids}
 
 Shopify が App Proxy 経由で shop、path_prefix、timestamp、signature を付与し、アプリ側では signature を検証します。
+
+## Theme App Extension の有効化
+
+Shopify管理画面で「オンラインストア」→「テーマ」→「カスタマイズ」を開きます。
+カートページで「ブロックを追加」→「アプリ」→「Point MAN points」を選択し、保存します。
+
+テーマコードを直接編集する必要はありません。
 
 ## ポイント利用フロー
 
