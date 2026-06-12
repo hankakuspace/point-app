@@ -47,6 +47,20 @@ type LatestLogMeta = {
 };
 
 function getLatestLogMeta(reason?: string): LatestLogMeta {
+  const normalizedReason = String(reason || "").trim().toLowerCase();
+
+  if (
+    normalizedReason === "csv_import" ||
+    normalizedReason.includes("csv") ||
+    normalizedReason.includes("一括付与") ||
+    normalizedReason.includes("過去購入分")
+  ) {
+    return {
+      label: "CSV",
+      dotColor: "#67e8f9",
+    };
+  }
+
   switch (reason) {
     case "purchase":
       return {
