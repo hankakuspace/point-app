@@ -7,8 +7,8 @@ const setupSteps = [
     body: "Shopify Partner側のPoint MANで、App Proxyのprefixが apps、subpathが apps、URLが https://point-app-gamma.vercel.app になっていることを確認します。",
   },
   {
-    title: "2. カート画面へポイントMANパネルを埋め込む",
-    body: "テーマのカート画面で、ログイン顧客IDとカート内の商品IDを取得し、/apps/apps/api/cart-points を呼び出す導線を設置します。",
+    title: "2. Theme App Extensionをカートに追加する",
+    body: "Shopifyテーマエディタでカートページを開き、ブロック追加からアプリの Point MAN points を選択して保存します。手動でLiquidを編集する必要はありません。",
   },
   {
     title: "3. ポイント表示を確認する",
@@ -43,8 +43,49 @@ export default function SetupPage() {
           ストアフロント導入ガイド
         </h1>
         <p style={{ margin: 0, color: "#5c5f62", fontSize: "14px", lineHeight: 1.7 }}>
-          ポイントMANは、Shopify App Proxyを利用してカート画面にポイント表示・ポイント利用フォームを表示します。
+          ポイントMANは、Theme App Extension の Point MAN points ブロックと Shopify App Proxy を利用して、
+          カート画面にポイント表示・ポイント利用フォームを表示します。
           このページでは、マーチャントと審査担当者が確認できるよう、導入手順とテスト手順をまとめています。
+        </p>
+      </section>
+
+      <section
+        style={{
+          background: "#ffffff",
+          border: "1px solid #dfe3e8",
+          borderRadius: "16px",
+          padding: "24px",
+          boxShadow: "0 1px 2px rgba(0,0,0,0.06)",
+        }}
+      >
+        <h2 style={{ margin: "0 0 12px", color: "#202223", fontSize: "18px" }}>
+          テーマエディタで有効化する
+        </h2>
+        <p style={{ margin: "0 0 12px", color: "#5c5f62", fontSize: "14px", lineHeight: 1.7 }}>
+          Shopify管理画面の「オンラインストア」→「テーマ」→「カスタマイズ」からカートページを開き、
+          「ブロックを追加」→「アプリ」→「Point MAN points」を選択して保存します。
+        </p>
+        <a
+          href="https://admin.shopify.com/themes/current/editor"
+          target="_blank"
+          rel="noreferrer"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            borderRadius: "8px",
+            padding: "10px 14px",
+            background: "#008060",
+            color: "#ffffff",
+            fontSize: "14px",
+            fontWeight: 700,
+            textDecoration: "none",
+          }}
+        >
+          テーマエディタを開く
+        </a>
+        <p style={{ margin: "12px 0 0", color: "#6d7175", fontSize: "13px", lineHeight: 1.7 }}>
+          テーマエディタを開いた後、カートページを選択して Point MAN points ブロックを追加してください。
         </p>
       </section>
 
@@ -76,8 +117,7 @@ export default function SetupPage() {
           https://{"{shop-domain}"}/apps/apps/api/cart-points
         </pre>
         <p style={{ margin: "12px 0 0", color: "#6d7175", fontSize: "13px", lineHeight: 1.7 }}>
-          実際のテーマでは、{"{shop-domain}"} を対象ストアのドメインに置き換え、
-          logged_in_customer_id と cartProductIds をクエリに含めて呼び出します。
+          Point MAN points ブロックが、このApp Proxy URLを読み込みます。
           ShopifyがApp Proxy経由で署名付きパラメータを付与し、アプリ側で検証します。
         </p>
       </section>
@@ -116,6 +156,7 @@ export default function SetupPage() {
           審査・テスト時の確認項目
         </h2>
         <ul style={{ margin: 0, paddingLeft: "20px", color: "#075985", fontSize: "14px", lineHeight: 1.8 }}>
+          <li>テーマエディタで Point MAN points ブロックを追加できること</li>
           <li>カート画面で cart-points が 200 になること</li>
           <li>ポイントMANパネルが表示されること</li>
           <li>ポイント利用後に割引コードが発行され、チェックアウトへ遷移すること</li>
