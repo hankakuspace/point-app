@@ -8,7 +8,7 @@ const setupSteps = [
   },
   {
     title: "2. Theme App Extensionをカートに追加する",
-    body: "Shopifyテーマエディタでカートページを開き、ブロック追加からアプリの Point MAN points を選択して保存します。手動でLiquidを編集する必要はありません。",
+    body: "Shopifyテーマエディタでカートページを開き、ブロック追加からアプリの Point MAN points を選択して保存します。テーマコードを直接編集する必要はありません。",
   },
   {
     title: "3. ポイント表示を確認する",
