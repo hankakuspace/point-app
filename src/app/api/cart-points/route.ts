@@ -230,9 +230,10 @@ export async function GET(req: Request) {
 
   const usePointFormParams = new URL(req.url).searchParams;
   const usePointFormQuery = usePointFormParams.toString();
+  const appUrl = process.env.SHOPIFY_APP_URL || "";
   const usePointFormAction = usePointFormQuery
-    ? `/apps/apps/api/use-point-form?${usePointFormQuery}`
-    : "/apps/apps/api/use-point-form";
+    ? `${appUrl}/api/use-point-form?${usePointFormQuery}`
+    : `${appUrl}/api/use-point-form`;
 
   const maxAvailable = Math.min(maxUsePoints, points);
   const canUse = points >= minUsePoints;
