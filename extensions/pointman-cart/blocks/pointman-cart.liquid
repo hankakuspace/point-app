@@ -10,8 +10,7 @@
     data-pointman-product-ids="{% for item in cart.items %}{{ item.product_id }}{% unless forloop.last %},{% endunless %}{% endfor %}"
   >
     <div style="border:1px solid #dfe3e8;border-radius:12px;padding:14px;background:#fff;">
-      <p style="margin:0;color:#6d7175;font-size:13px;">ポイントMAN</p>
-      <p style="margin:6px 0 0;font-size:14px;">ポイント情報を読み込んでいます。</p>
+      <p style="margin:0;font-size:14px;">ポイント情報を読み込んでいます。</p>
     </div>
   </div>
 
@@ -54,7 +53,6 @@
   </script>
 {% else %}
   <div style="border:1px solid #dfe3e8;border-radius:12px;padding:14px;background:#fff;">
-    <p style="margin:0 0 6px;color:#6d7175;font-size:13px;">ポイントMAN</p>
     <p style="margin:0;font-size:14px;">ポイントを利用するにはログインが必要です。</p>
   </div>
 {% endif %}
