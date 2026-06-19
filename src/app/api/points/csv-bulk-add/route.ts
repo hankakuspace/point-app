@@ -165,6 +165,23 @@ async function findCustomer(row: CsvRow, shop: string) {
   };
 }
 
+async function hasDuplicatePointLog(params: {
+  shop: string;
+  customerId: string;
+  reason: string;
+}) {
+  const duplicateSnap = await db
+    .collection("point_logs")
+    .where("shop", "==", params.shop)
+    .where("customerId", "==", params.customerId)
+    .where("type", "==", "add")
+    .where("reason", "==", params.reason)
+    .limit(1)
+    .get();
+
+  return !duplicateSnap.empty;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const requestedShop = req.nextUrl.searchParams.get("shop") || "";
@@ -246,18 +263,36 @@ export async function POST(req: NextRequest) {
         continue;
       }
 
-      const currentPoints =
-        typeof foundCustomer.data.points === "number" &&
-        Number.isFinite(foundCustomer.data.points)
-          ? foundCustomer.data.points
-          : 0;
-
-      const nextPoints = currentPoints + row.points;
       const reason = row.reason || defaultReason || "csv_import";
 
+      const duplicateExists = await hasDuplicatePointLog({
+        shop,
+        customerId: foundCustomer.id,
+        reason,
+      });
+
+      if (duplicateExists) {
+        failedRows.push({
+          lineNumber: row.lineNumber,
+          customerId: row.customerId || foundCustomer.id,
+          email: row.email,
+          reason: "重複付与防止: 同じ付与理由の履歴がすでに存在します。",
+        });
+        continue;
+      }
+
       await db.runTransaction(async (transaction) => {
+        const latestCustomerSnap = await transaction.get(foundCustomer.ref);
+        const latestCustomerData = latestCustomerSnap.data() || {};
+
+        const currentPoints =
+          typeof latestCustomerData.points === "number" &&
+          Number.isFinite(latestCustomerData.points)
+            ? latestCustomerData.points
+            : 0;
+
         transaction.update(foundCustomer.ref, {
-          points: nextPoints,
+          points: currentPoints + row.points,
         });
 
         transaction.set(db.collection("point_logs").doc(), {
