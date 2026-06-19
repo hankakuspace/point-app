@@ -171,6 +171,7 @@ export default function CustomersPage() {
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [csvReason, setCsvReason] = useState("過去購入分ポイント移行");
   const [csvLoading, setCsvLoading] = useState(false);
+  const [initialCsvLoading, setInitialCsvLoading] = useState(false);
 
   const filteredCustomers = customers.filter((customer) => {
     const keyword = searchQuery.trim().toLowerCase();
@@ -420,6 +421,60 @@ export default function CustomersPage() {
       alert("一括ポイント更新エラー");
     } finally {
       setBulkLoading(false);
+    }
+  };
+
+  const handleDownloadInitialPointsCsv = async () => {
+    const shop = shopDomain || getShopFromCurrentContext();
+
+    if (!shop) {
+      alert("shop が取得できませんでした。アプリをShopify管理画面から開き直してください。");
+      return;
+    }
+
+    setInitialCsvLoading(true);
+
+    try {
+      const params = new URLSearchParams({
+        shop,
+        reason: csvReason || "過去購入分ポイント移行",
+      });
+
+      const res = await fetch(
+        `/api/admin/customers/initial-points-csv?${params.toString()}`,
+        {
+          cache: "no-store",
+          headers: await getShopifySessionHeaders(),
+        }
+      );
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        alert("過去購入分CSV作成に失敗しました: " + (data.error || "不明なエラー"));
+        return;
+      }
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const contentDisposition = res.headers.get("Content-Disposition") || "";
+      const filenameMatch = contentDisposition.match(/filename="([^"]+)"/);
+      const filename = filenameMatch?.[1] || "initial-points.csv";
+
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      setToastMessage("過去購入分ポイントCSVを作成しました");
+      setToastActive(true);
+    } catch (error) {
+      console.error(error);
+      alert("過去購入分CSV作成エラー");
+    } finally {
+      setInitialCsvLoading(false);
     }
   };
 
@@ -703,7 +758,7 @@ export default function CustomersPage() {
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "minmax(0, 1fr) minmax(220px, 0.7fr) auto",
+                  gridTemplateColumns: "minmax(0, 1fr) minmax(220px, 0.7fr) auto auto",
                   gap: "12px",
                   alignItems: "end",
                 }}
@@ -740,6 +795,13 @@ export default function CustomersPage() {
                   autoComplete="off"
                   placeholder="例：過去購入分ポイント移行"
                 />
+
+                <Button
+                  onClick={handleDownloadInitialPointsCsv}
+                  loading={initialCsvLoading}
+                >
+                  過去購入分CSV作成
+                </Button>
 
                 <Button
                   variant="primary"
