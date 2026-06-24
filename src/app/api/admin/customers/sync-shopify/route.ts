@@ -129,10 +129,16 @@ export async function POST(req: Request) {
         (await response.json()) as ShopifyCustomersResponse;
 
       if (!response.ok || result.errors) {
+        console.error("Shopify customers sync fetch failed:", {
+          status: response.status,
+          errors: result.errors,
+          result,
+        });
+
         return NextResponse.json(
           {
             success: false,
-            error: "Shopify customers fetch failed",
+            error: `Shopify customers fetch failed: ${JSON.stringify(result.errors || result)}`,
             details: result.errors || result,
           },
           { status: response.status || 500 }
