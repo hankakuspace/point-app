@@ -4,4 +4,7 @@ api_version = "2025-10"
 name = "Point MAN"
 type = "editor_extension_collection"
 handle = "pointman-editor-collection"
-includes = ["pointman-account-points"]
+includes = [
+  "pointman-account-points",
+  "pointman-account-history"
+]

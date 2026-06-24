@@ -1,0 +1,14 @@
+api_version = "2025-10"
+
+[[extensions]]
+type = "ui_extension"
+name = "Point MAN Account History"
+handle = "pointman-account-history"
+
+[[extensions.targeting]]
+module = "./src/ProfileHistoryBlockExtension.jsx"
+target = "customer-account.profile.block.render"
+
+[extensions.capabilities]
+api_access = true
+network_access = true
