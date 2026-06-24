@@ -173,7 +173,47 @@ export default function CustomersPage() {
   const [csvLoading, setCsvLoading] = useState(false);
   const [initialCsvLoading, setInitialCsvLoading] = useState(false);
 
-  const filteredCustomers = customers.filter((customer) => {
+  const pageSize = 100;
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const getPointLogTimestampValue = (value: any) => {
+    if (!value) {
+      return 0;
+    }
+
+    if (typeof value === "string") {
+      const time = new Date(value).getTime();
+      return Number.isFinite(time) ? time : 0;
+    }
+
+    if (typeof value.toDate === "function") {
+      const time = value.toDate().getTime();
+      return Number.isFinite(time) ? time : 0;
+    }
+
+    if (typeof value.seconds === "number") {
+      return value.seconds * 1000;
+    }
+
+    if (typeof value._seconds === "number") {
+      return value._seconds * 1000 + Math.floor((value._nanoseconds || 0) / 1000000);
+    }
+
+    return 0;
+  };
+
+  const sortedCustomers = [...customers].sort((a, b) => {
+    const aTime = getPointLogTimestampValue(a.latestPointLog?.timestamp);
+    const bTime = getPointLogTimestampValue(b.latestPointLog?.timestamp);
+
+    if (aTime !== bTime) {
+      return bTime - aTime;
+    }
+
+    return String(a.id).localeCompare(String(b.id), "ja");
+  });
+
+  const filteredCustomers = sortedCustomers.filter((customer) => {
     const keyword = searchQuery.trim().toLowerCase();
 
     if (!keyword) {
@@ -190,6 +230,14 @@ export default function CustomersPage() {
         String(value).toLowerCase().includes(keyword)
       );
   });
+
+  const totalPages = Math.max(1, Math.ceil(filteredCustomers.length / pageSize));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const pageStartIndex = (safeCurrentPage - 1) * pageSize;
+  const pageEndIndex = pageStartIndex + pageSize;
+  const paginatedCustomers = filteredCustomers.slice(pageStartIndex, pageEndIndex);
+  const visibleStart = filteredCustomers.length === 0 ? 0 : pageStartIndex + 1;
+  const visibleEnd = Math.min(pageEndIndex, filteredCustomers.length);
 
   const {
     selectedResources,
@@ -546,6 +594,10 @@ export default function CustomersPage() {
     fetchCustomers();
   }, []);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
+
   const formatDate = (createdAt: any) => {
     if (!createdAt) return "-";
 
@@ -583,7 +635,7 @@ export default function CustomersPage() {
   return (
     <Page
       title="顧客管理"
-      subtitle={`登録顧客数: ${customers.length}件 / 表示: ${filteredCustomers.length}件`}
+      subtitle={`登録顧客数: ${customers.length}件 / 表示: ${visibleStart}-${visibleEnd}件 / ${filteredCustomers.length}件`}
       fullWidth
     >
       {toastActive && (
@@ -823,7 +875,7 @@ export default function CustomersPage() {
             singular: "customer",
             plural: "customers",
           }}
-          itemCount={filteredCustomers.length}
+          itemCount={paginatedCustomers.length}
           selectedItemsCount={
             allResourcesSelected ? "All" : selectedResources.length
           }
@@ -838,12 +890,12 @@ export default function CustomersPage() {
             { title: "最新日時" },
           ]}
         >
-          {filteredCustomers.map((customer, index) => (
+          {paginatedCustomers.map((customer, index) => (
             <IndexTable.Row
               id={customer.id}
               key={customer.id}
               selected={selectedResources.includes(customer.id)}
-              position={index}
+              position={pageStartIndex + index}
             >
               <IndexTable.Cell>
                 <Tooltip
@@ -1025,6 +1077,50 @@ export default function CustomersPage() {
             </IndexTable.Row>
           ))}
         </IndexTable>
+          </Card>
+        </Layout.Section>
+
+        <Layout.Section>
+          <Card>
+            <div
+              style={{
+                padding: "12px 16px",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                gap: "12px",
+              }}
+            >
+              <Text as="p" variant="bodySm" tone="subdued">
+                {visibleStart}-{visibleEnd}件 / {filteredCustomers.length}件
+              </Text>
+
+              <div
+                style={{
+                  display: "flex",
+                  gap: "8px",
+                  alignItems: "center",
+                }}
+              >
+                <Button
+                  onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                  disabled={safeCurrentPage <= 1}
+                >
+                  前へ
+                </Button>
+
+                <Text as="p" variant="bodySm">
+                  {safeCurrentPage} / {totalPages}
+                </Text>
+
+                <Button
+                  onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                  disabled={safeCurrentPage >= totalPages}
+                >
+                  次へ
+                </Button>
+              </div>
+            </div>
           </Card>
         </Layout.Section>
       </Layout>
