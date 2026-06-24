@@ -175,7 +175,7 @@ export default function CustomersPage() {
   const [syncLoading, setSyncLoading] = useState(false);
 
   const [csvFile, setCsvFile] = useState<File | null>(null);
-  const [csvReason, setCsvReason] = useState("過去購入分ポイント移行");
+  const [csvReason, setCsvReason] = useState("");
   const [csvLoading, setCsvLoading] = useState(false);
   const [initialCsvLoading, setInitialCsvLoading] = useState(false);
 
