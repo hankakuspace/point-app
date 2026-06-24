@@ -37,6 +37,13 @@ function Extension() {
         );
 
         const customerJson = await customerResponse.json();
+
+        if (!customerResponse.ok || customerJson.errors) {
+          throw new Error(
+            `Customer Account API error: ${JSON.stringify(customerJson.errors || customerJson)}`
+          );
+        }
+
         const customerGid = customerJson?.data?.customer?.id || "";
         const customerId = getNumericCustomerId(customerGid);
 
@@ -64,7 +71,9 @@ function Extension() {
         console.error(error);
 
         if (!cancelled) {
-          setDisplayText("ポイント情報を取得できませんでした。");
+          setDisplayText(
+            `ポイント情報を取得できませんでした。${error?.message ? ` (${error.message})` : ""}`
+          );
         }
       }
     }

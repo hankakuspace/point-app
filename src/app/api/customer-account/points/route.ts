@@ -4,8 +4,29 @@ import { db } from "@/lib/firebaseAdmin";
 
 export const runtime = "nodejs";
 
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type",
+  "Cache-Control": "no-store",
+};
+
 function getNumericCustomerId(value: string) {
   return value.split("/").pop() || value;
+}
+
+function jsonResponse(body: Record<string, unknown>, status = 200) {
+  return NextResponse.json(body, {
+    status,
+    headers: corsHeaders,
+  });
+}
+
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: corsHeaders,
+  });
 }
 
 export async function GET(req: NextRequest) {
@@ -14,22 +35,23 @@ export async function GET(req: NextRequest) {
     const customerId = getNumericCustomerId(customerIdParam);
 
     if (!customerId) {
-      return NextResponse.json(
+      return jsonResponse(
         {
           success: false,
           error: "Missing customerId",
         },
-        { status: 400 }
+        400
       );
     }
 
     const customerDoc = await db.collection("customers").doc(customerId).get();
 
     if (!customerDoc.exists) {
-      return NextResponse.json({
+      return jsonResponse({
         success: true,
         customerId,
         points: 0,
+        found: false,
       });
     }
 
@@ -39,20 +61,21 @@ export async function GET(req: NextRequest) {
         ? customerData.points
         : 0;
 
-    return NextResponse.json({
+    return jsonResponse({
       success: true,
       customerId,
       points,
+      found: true,
     });
   } catch (error) {
     console.error("Failed to fetch customer account points:", error);
 
-    return NextResponse.json(
+    return jsonResponse(
       {
         success: false,
         error: "Internal Server Error",
       },
-      { status: 500 }
+      500
     );
   }
 }
