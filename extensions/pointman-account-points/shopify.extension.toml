@@ -7,7 +7,7 @@ name = "Point MAN Account Points"
 handle = "pointman-account-points"
 
 [[extensions.targeting]]
-module = "./src/ProfileBlockExtension.jsx"
+module = "./src/index.jsx"
 target = "customer-account.profile.block.render"
 
 [extensions.capabilities]
