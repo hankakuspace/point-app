@@ -2,7 +2,7 @@ api_version = "2025-10"
 
 [[extensions]]
 uid = "e06e29ce-d27d-24d0-739c-146523309c0a826e69c9"
-type = "ui_extension"
+type = "customer_account_ui"
 name = "Point MAN Account Points"
 handle = "pointman-account-points"
 
