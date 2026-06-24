@@ -10,12 +10,12 @@ function ProfileBlockExtension() {
   return (
     <s-section heading="ポイントMAN">
       <s-stack direction="block" gap="base" paddingBlockStart="base">
-        <s-box padding="base" border="base" borderRadius="base">
+        <s-grid gridTemplateColumns="1fr" gap="large">
           <s-stack direction="block" gap="small">
             <s-text color="subdued">保有ポイント</s-text>
             <s-text type="strong">表示テスト：0 pt</s-text>
           </s-stack>
-        </s-box>
+        </s-grid>
       </s-stack>
     </s-section>
   );
