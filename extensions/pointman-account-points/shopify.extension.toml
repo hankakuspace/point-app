@@ -1,0 +1,13 @@
+api_version = "2025-10"
+
+[[extensions]]
+type = "ui_extension"
+name = "Point MAN Account Points"
+handle = "pointman-account-points"
+
+[[extensions.targeting]]
+module = "./src/ProfileBlockExtension.jsx"
+target = "customer-account.profile.block.render"
+
+[extensions.capabilities]
+network_access = true

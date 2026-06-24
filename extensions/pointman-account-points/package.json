@@ -1,0 +1,9 @@
+{
+  "name": "pointman-account-points",
+  "private": true,
+  "version": "1.0.0",
+  "dependencies": {
+    "@shopify/ui-extensions": "^2025.10.0",
+    "preact": "^10.27.0"
+  }
+}
