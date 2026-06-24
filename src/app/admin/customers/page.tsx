@@ -49,15 +49,21 @@ type LatestLogMeta = {
 function getLatestLogMeta(reason?: string): LatestLogMeta {
   const normalizedReason = String(reason || "").trim().toLowerCase();
 
-  if (
-    normalizedReason === "csv_import" ||
-    normalizedReason.includes("csv") ||
-    normalizedReason.includes("一括付与") ||
-    normalizedReason.includes("過去購入分")
-  ) {
+  if (normalizedReason === "csv_import" || normalizedReason.includes("csv")) {
     return {
       label: "CSV",
       dotColor: "#67e8f9",
+    };
+  }
+
+  if (
+    normalizedReason.includes("一括付与") ||
+    normalizedReason.includes("過去購入分") ||
+    normalizedReason.includes("移行")
+  ) {
+    return {
+      label: "移行",
+      dotColor: "#fde68a",
     };
   }
 
@@ -810,7 +816,7 @@ export default function CustomersPage() {
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "minmax(0, 1fr) minmax(220px, 0.7fr) auto auto",
+                  gridTemplateColumns: "minmax(0, 1fr) minmax(220px, 0.7fr) auto",
                   gap: "12px",
                   alignItems: "end",
                 }}
@@ -841,19 +847,13 @@ export default function CustomersPage() {
                 </div>
 
                 <TextField
-                  label="付与理由"
+                  label="付与理由（CSVに reason がない場合）"
                   value={csvReason}
                   onChange={(value) => setCsvReason(value)}
                   autoComplete="off"
-                  placeholder="例：過去購入分ポイント移行"
+                  placeholder="例：キャンペーン付与"
+                  helpText="CSV内に reason がある場合は、CSVの内容が優先されます。"
                 />
-
-                <Button
-                  onClick={handleDownloadInitialPointsCsv}
-                  loading={initialCsvLoading}
-                >
-                  過去購入分CSV作成
-                </Button>
 
                 <Button
                   variant="primary"
@@ -1053,9 +1053,7 @@ export default function CustomersPage() {
                     />
 
                     <Text as="span" variant="bodySm">
-                      {getLatestLogMeta(
-                        customer.latestPointLog.reason
-                      ).label}
+                      {formatPointLogReason(customer.latestPointLog.reason)}
                     </Text>
                   </span>
                 ) : (
