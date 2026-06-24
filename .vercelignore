@@ -28,3 +28,5 @@ package-lock 2.json
 -d
 -H
 Environment
+extensions
+extensions/**
