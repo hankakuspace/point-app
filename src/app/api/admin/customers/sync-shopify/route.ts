@@ -1,6 +1,7 @@
 // src/app/api/admin/customers/sync-shopify/route.ts
 import { NextResponse } from "next/server";
-import { db } from "@/lib/firebase";
+import { FieldValue } from "firebase-admin/firestore";
+import { db } from "@/lib/firebaseAdmin";
 import { requireShopifySessionToken } from "@/lib/shopifySessionToken";
 
 export const runtime = "nodejs";
@@ -42,6 +43,19 @@ function buildCustomerName(customer: ShopifyCustomerNode) {
     .trim();
 }
 
+function getShopifyCustomerFetchErrorMessage(details: unknown) {
+  const detailText = JSON.stringify(details || "");
+
+  if (
+    detailText.includes("Invalid API key or access token") ||
+    detailText.includes("unrecognized login or wrong password")
+  ) {
+    return "Shopify認証が無効になっています。アプリを開き直して再認証してください。";
+  }
+
+  return "Shopify顧客情報の取得に失敗しました。時間をおいて再実行してください。";
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json().catch(() => ({}));
@@ -74,10 +88,39 @@ export async function POST(req: Request) {
 
     if (!accessToken) {
       return NextResponse.json(
-        { success: false, error: "Access token not found" },
+        {
+          success: false,
+          error: "Shopify認証が見つかりません。アプリを開き直して再認証してください。",
+        },
         { status: 401 }
       );
     }
+
+    const existingCustomersSnapshot = await db
+      .collection("customers")
+      .where("shop", "==", shop)
+      .get();
+
+    const existingCustomerIds = new Set(
+      existingCustomersSnapshot.docs.map((doc) => doc.id)
+    );
+
+    let batch = db.batch();
+    let batchOperationCount = 0;
+
+    const commitBatchIfNeeded = async (force = false) => {
+      if (batchOperationCount === 0) {
+        return;
+      }
+
+      if (!force && batchOperationCount < 450) {
+        return;
+      }
+
+      await batch.commit();
+      batch = db.batch();
+      batchOperationCount = 0;
+    };
 
     let hasNextPage = true;
     let after: string | null = null;
@@ -118,15 +161,14 @@ export async function POST(req: Request) {
           body: JSON.stringify({
             query,
             variables: {
-              first: 100,
+              first: 250,
               after,
             },
           }),
         }
       );
 
-      const result =
-        (await response.json()) as ShopifyCustomersResponse;
+      const result = (await response.json()) as ShopifyCustomersResponse;
 
       if (!response.ok || result.errors) {
         console.error("Shopify customers sync fetch failed:", {
@@ -138,8 +180,9 @@ export async function POST(req: Request) {
         return NextResponse.json(
           {
             success: false,
-            error: `Shopify customers fetch failed: ${JSON.stringify(result.errors || result)}`,
-            details: result.errors || result,
+            error: getShopifyCustomerFetchErrorMessage(
+              result.errors || result
+            ),
           },
           { status: response.status || 500 }
         );
@@ -155,7 +198,7 @@ export async function POST(req: Request) {
         const customer = edge.node;
         const customerId = getNumericCustomerId(customer.id);
         const customerRef = db.collection("customers").doc(customerId);
-        const existingCustomer = await customerRef.get();
+        const isExistingCustomer = existingCustomerIds.has(customerId);
 
         const customerData = {
           shop,
@@ -166,26 +209,34 @@ export async function POST(req: Request) {
           updatedAt: new Date().toISOString(),
         };
 
-        if (existingCustomer.exists) {
-          await customerRef.set(customerData, { merge: true });
+        if (isExistingCustomer) {
+          batch.set(customerRef, customerData, { merge: true });
           updatedCount += 1;
         } else {
-          await customerRef.set(
+          batch.set(
+            customerRef,
             {
               ...customerData,
-              points: 0,
+              points: FieldValue.increment(0),
             },
             { merge: true }
           );
+
+          existingCustomerIds.add(customerId);
           createdCount += 1;
         }
 
+        batchOperationCount += 1;
         syncedCount += 1;
+
+        await commitBatchIfNeeded();
       }
 
       hasNextPage = customers.pageInfo.hasNextPage;
       after = customers.pageInfo.endCursor;
     }
+
+    await commitBatchIfNeeded(true);
 
     return NextResponse.json({
       success: true,
