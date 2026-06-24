@@ -1,19 +1,26 @@
 // extensions/pointman-account-points/src/ProfileBlockExtension.jsx
 import "@shopify/ui-extensions/preact";
+
 import { render } from "preact";
 
-export default () => {
-  render(<ProfileBlockExtension />, document.body);
+export default async () => {
+  render(<BlockExtension />, document.body);
 };
 
-function ProfileBlockExtension() {
+function BlockExtension() {
   return (
-    <s-card>
-      <s-stack direction="block" gap="base">
-        <s-text type="strong">ポイントMAN</s-text>
-        <s-text color="subdued">保有ポイント</s-text>
-        <s-text type="strong">表示テスト：0 pt</s-text>
+    <s-section>
+      <s-stack
+        direction="inline"
+        justifyContent="space-between"
+        alignItems="center"
+      >
+        <s-stack direction="block" gap="small-400">
+          <s-heading>ポイントMAN</s-heading>
+          <s-text>保有ポイント</s-text>
+          <s-text>表示テスト：0 pt</s-text>
+        </s-stack>
       </s-stack>
-    </s-card>
+    </s-section>
   );
 }
