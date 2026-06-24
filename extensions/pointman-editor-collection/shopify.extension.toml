@@ -1,0 +1,7 @@
+api_version = "2025-10"
+
+[[extensions]]
+name = "Point MAN"
+type = "editor_extension_collection"
+handle = "pointman-editor-collection"
+includes = ["pointman-account-points"]
