@@ -1,3 +1,4 @@
+# extensions/pointman-editor-collection/shopify.extension.toml
 api_version = "2025-10"
 
 [[extensions]]
@@ -6,5 +7,6 @@ type = "editor_extension_collection"
 handle = "pointman-editor-collection"
 includes = [
   "pointman-account-points",
-  "pointman-account-history"
+  "pointman-account-history",
+  "pointman-account-render-test"
 ]
