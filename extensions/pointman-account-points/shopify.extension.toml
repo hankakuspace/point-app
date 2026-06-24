@@ -7,9 +7,8 @@ name = "Point MAN Account Points"
 handle = "pointman-account-points"
 
 [[extensions.targeting]]
-module = "./src/ProfileBlockExtension.jsx"
+module = "./src/OrderStatusBlock.jsx"
 target = "customer-account.profile.block.render"
 
 [extensions.capabilities]
 api_access = true
-network_access = true
