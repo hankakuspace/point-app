@@ -1,26 +1,29 @@
 // extensions/pointman-account-points/src/ProfileBlockExtension.jsx
-import "@shopify/ui-extensions/preact";
-
-import { render } from "preact";
-
 export default async () => {
-  render(<BlockExtension />, document.body);
-};
+  const wrapper = document.createElement("div");
+  wrapper.style.padding = "16px";
+  wrapper.style.border = "1px solid #ddd";
+  wrapper.style.borderRadius = "12px";
+  wrapper.style.background = "#fff";
+  wrapper.style.margin = "12px 0";
 
-function BlockExtension() {
-  return (
-    <s-section>
-      <s-stack
-        direction="inline"
-        justifyContent="space-between"
-        alignItems="center"
-      >
-        <s-stack direction="block" gap="small-400">
-          <s-heading>ポイントMAN</s-heading>
-          <s-text>保有ポイント</s-text>
-          <s-text>表示テスト：0 pt</s-text>
-        </s-stack>
-      </s-stack>
-    </s-section>
-  );
-}
+  const title = document.createElement("div");
+  title.textContent = "ポイントMAN";
+  title.style.fontWeight = "700";
+  title.style.marginBottom = "8px";
+
+  const label = document.createElement("div");
+  label.textContent = "保有ポイント";
+
+  const points = document.createElement("div");
+  points.textContent = "表示テスト：0 pt";
+  points.style.fontWeight = "700";
+  points.style.fontSize = "20px";
+  points.style.marginTop = "4px";
+
+  wrapper.appendChild(title);
+  wrapper.appendChild(label);
+  wrapper.appendChild(points);
+
+  document.body.appendChild(wrapper);
+};
