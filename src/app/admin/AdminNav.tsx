@@ -24,6 +24,12 @@ const adminNavItems = [
     icon: NoteIcon,
   },
   {
+    url: "/admin/csv-bulk-points",
+    label: "CSV一括付与",
+    match: "/admin/csv-bulk-points",
+    icon: NoteIcon,
+  },
+  {
     url: "/admin/settings",
     label: "ポイント付与設定",
     match: "/admin/settings",

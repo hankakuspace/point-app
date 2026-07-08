@@ -172,13 +172,6 @@ export default function CustomersPage() {
   const [bulkLoading, setBulkLoading] = useState(false);
 
   const [shopDomain, setShopDomain] = useState("");
-  const [syncLoading, setSyncLoading] = useState(false);
-
-  const [csvFile, setCsvFile] = useState<File | null>(null);
-  const [csvReason, setCsvReason] = useState("");
-  const [csvLoading, setCsvLoading] = useState(false);
-  const [initialCsvLoading, setInitialCsvLoading] = useState(false);
-
   const pageSize = 100;
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -361,49 +354,7 @@ export default function CustomersPage() {
     }
   };
 
-  const handleSyncShopifyCustomers = async () => {
-    if (!shopDomain) {
-      alert("shop が取得できませんでした。アプリをShopify管理画面から開き直してください。");
-      return;
-    }
 
-    if (!confirm("Shopifyの顧客情報をポイントMANへ同期しますか？")) {
-      return;
-    }
-
-    setSyncLoading(true);
-
-    try {
-      const res = await fetch("/api/admin/customers/sync-shopify", {
-        method: "POST",
-        headers: await getShopifySessionHeaders({
-          "Content-Type": "application/json",
-        }),
-        body: JSON.stringify({
-          shop: shopDomain,
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok || !data.success) {
-        alert("Shopify顧客同期に失敗しました: " + (data.error || "不明なエラー"));
-        return;
-      }
-
-      setToastMessage(
-        `Shopify顧客同期が完了しました（作成: ${data.createdCount}件 / 更新: ${data.updatedCount}件）`
-      );
-      setToastActive(true);
-
-      await fetchCustomers();
-    } catch (error) {
-      console.error(error);
-      alert("Shopify顧客同期エラー");
-    } finally {
-      setSyncLoading(false);
-    }
-  };
 
   const handleBulkPointUpdate = async () => {
     const pointValue = Number(bulkPoints);
@@ -478,122 +429,9 @@ export default function CustomersPage() {
     }
   };
 
-  const handleDownloadInitialPointsCsv = async () => {
-    const shop = shopDomain || getShopFromCurrentContext();
 
-    if (!shop) {
-      alert("shop が取得できませんでした。アプリをShopify管理画面から開き直してください。");
-      return;
-    }
 
-    setInitialCsvLoading(true);
 
-    try {
-      const params = new URLSearchParams({
-        shop,
-        reason: csvReason || "過去購入分ポイント移行",
-      });
-
-      const res = await fetch(
-        `/api/admin/customers/initial-points-csv?${params.toString()}`,
-        {
-          cache: "no-store",
-          headers: await getShopifySessionHeaders(),
-        }
-      );
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        alert("過去購入分CSV作成に失敗しました: " + (data.error || "不明なエラー"));
-        return;
-      }
-
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-      const contentDisposition = res.headers.get("Content-Disposition") || "";
-      const filenameMatch = contentDisposition.match(/filename="([^"]+)"/);
-      const filename = filenameMatch?.[1] || "initial-points.csv";
-
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-
-      setToastMessage("過去購入分ポイントCSVを作成しました");
-      setToastActive(true);
-    } catch (error) {
-      console.error(error);
-      alert("過去購入分CSV作成エラー");
-    } finally {
-      setInitialCsvLoading(false);
-    }
-  };
-
-  const handleCsvBulkAdd = async () => {
-    if (!csvFile) {
-      alert("CSVファイルを選択してください");
-      return;
-    }
-
-    const shop = shopDomain || getShopFromCurrentContext();
-
-    if (!shop) {
-      alert("shop が取得できませんでした。アプリをShopify管理画面から開き直してください。");
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append("csv", csvFile);
-    formData.append("reason", csvReason || "csv_import");
-
-    setCsvLoading(true);
-
-    try {
-      const res = await fetch(
-        `/api/points/csv-bulk-add?shop=${encodeURIComponent(shop)}`,
-        {
-          method: "POST",
-          headers: await getShopifySessionHeaders(),
-          body: formData,
-        }
-      );
-
-      const data = await res.json();
-
-      if (!res.ok || !data.success) {
-        const errorMessage = Array.isArray(data.errors)
-          ? data.errors.join("\n")
-          : data.error || "不明なエラー";
-
-        alert(`CSV一括付与に失敗しました:\n${errorMessage}`);
-        return;
-      }
-
-      const failedMessage =
-        data.failedCount > 0
-          ? ` / 失敗: ${data.failedCount}件`
-          : "";
-
-      setToastMessage(
-        `CSV一括付与が完了しました（成功: ${data.successCount}件${failedMessage}）`
-      );
-      setToastActive(true);
-      setCsvFile(null);
-      await fetchCustomers();
-
-      if (data.failedCount > 0) {
-        console.warn("CSV bulk add failed rows:", data.failedRows);
-      }
-    } catch (error) {
-      console.error(error);
-      alert("CSV一括付与エラー");
-    } finally {
-      setCsvLoading(false);
-    }
-  };
 
 
   useEffect(() => {
@@ -712,7 +550,7 @@ export default function CustomersPage() {
           <div
             style={{
               display: "grid",
-          gridTemplateColumns: "minmax(0, 1.3fr) minmax(360px, 1fr) minmax(260px, 0.7fr)",
+          gridTemplateColumns: "minmax(0, 1fr) minmax(260px, 0.4fr)",
           gap: "12px",
           alignItems: "stretch",
         }}
@@ -742,43 +580,6 @@ export default function CustomersPage() {
               height: "100%",
             }}
           >
-            <div>
-              <Text as="p" variant="bodyMd" fontWeight="medium">
-                Shopify顧客同期
-              </Text>
-              <Text as="p" variant="bodySm" tone="subdued">
-                Shopifyの顧客一覧を取り込みます。既存ポイントは上書きしません。
-              </Text>
-            </div>
-
-            <div
-              style={{
-                flexShrink: 0,
-                minWidth: "96px",
-              }}
-            >
-              <Button
-                onClick={handleSyncShopifyCustomers}
-                loading={syncLoading}
-                fullWidth
-              >
-                同期する
-              </Button>
-            </div>
-          </div>
-        </Card>
-
-        <Card>
-          <div
-            style={{
-              padding: "12px 16px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: "12px",
-              height: "100%",
-            }}
-          >
             <Text as="p" variant="bodyMd" fontWeight="medium">
               選択中：{selectedResources.length}名
             </Text>
@@ -793,79 +594,6 @@ export default function CustomersPage() {
           </div>
         </Card>
           </div>
-        </Layout.Section>
-
-        <Layout.Section>
-          <Card>
-            <div
-              style={{
-                padding: "16px",
-                display: "grid",
-                gap: "14px",
-              }}
-            >
-              <div>
-                <Text as="p" variant="bodyMd" fontWeight="medium">
-                  CSV一括ポイント付与
-                </Text>
-                <Text as="p" variant="bodySm" tone="subdued">
-                  customerId または email と points を含むCSVで、既存顧客へポイントを一括付与します。
-                </Text>
-              </div>
-
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "minmax(0, 1fr) minmax(220px, 0.7fr) auto",
-                  gap: "12px",
-                  alignItems: "end",
-                }}
-              >
-                <div>
-                  <label
-                    style={{
-                      display: "block",
-                      marginBottom: "6px",
-                      fontSize: "13px",
-                      fontWeight: 600,
-                      color: "#202223",
-                    }}
-                  >
-                    CSVファイル
-                  </label>
-                  <input
-                    type="file"
-                    accept=".csv,text/csv"
-                    onChange={(event) => {
-                      const file = event.currentTarget.files?.[0] || null;
-                      setCsvFile(file);
-                    }}
-                  />
-                  <Text as="p" variant="bodySm" tone="subdued">
-                    形式: customerId,email,points,reason
-                  </Text>
-                </div>
-
-                <TextField
-                  label="付与理由（CSVに reason がない場合）"
-                  value={csvReason}
-                  onChange={(value) => setCsvReason(value)}
-                  autoComplete="off"
-                  placeholder="例：キャンペーン付与"
-                  helpText="CSV内に reason がある場合は、CSVの内容が優先されます。"
-                />
-
-                <Button
-                  variant="primary"
-                  onClick={handleCsvBulkAdd}
-                  loading={csvLoading}
-                  disabled={!csvFile}
-                >
-                  CSV一括付与
-                </Button>
-              </div>
-            </div>
-          </Card>
         </Layout.Section>
 
         <Layout.Section>
