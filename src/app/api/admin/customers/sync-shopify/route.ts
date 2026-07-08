@@ -32,6 +32,25 @@ type ShopifyCustomersResponse = {
   errors?: unknown;
 };
 
+type ShopifyTokenResponse = {
+  access_token?: string;
+  refresh_token?: string;
+  expires_in?: number;
+  refresh_token_expires_in?: number;
+  scope?: string;
+  error?: string;
+  error_description?: string;
+};
+
+type ShopAuthData = {
+  accessToken?: string;
+  refreshToken?: string;
+  accessTokenExpiresAt?: string | null;
+  refreshTokenExpiresAt?: string | null;
+  tokenType?: string;
+  scope?: string;
+};
+
 function getNumericCustomerId(gid: string) {
   return gid.split("/").pop() || gid;
 }
@@ -54,6 +73,68 @@ function getShopifyCustomerFetchErrorMessage(details: unknown) {
   }
 
   return "Shopify顧客情報の取得に失敗しました。時間をおいて再実行してください。";
+}
+
+function shouldRefreshAccessToken(expiresAt?: string | null) {
+  if (!expiresAt) {
+    return false;
+  }
+
+  const expiresAtTime = new Date(expiresAt).getTime();
+
+  if (!Number.isFinite(expiresAtTime)) {
+    return false;
+  }
+
+  const refreshBufferMs = 5 * 60 * 1000;
+  return expiresAtTime <= Date.now() + refreshBufferMs;
+}
+
+async function refreshShopifyAccessToken(shop: string, refreshToken: string) {
+  const tokenRes = await fetch(`https://${shop}/admin/oauth/access_token`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify({
+      client_id: process.env.SHOPIFY_API_KEY,
+      client_secret: process.env.SHOPIFY_API_SECRET,
+      grant_type: "refresh_token",
+      refresh_token: refreshToken,
+    }),
+  });
+
+  const tokenJson = (await tokenRes.json().catch(() => ({}))) as ShopifyTokenResponse;
+
+  if (!tokenRes.ok || !tokenJson.access_token) {
+    console.error("Shopify token refresh failed:", {
+      shop,
+      status: tokenRes.status,
+      tokenJson,
+    });
+
+    throw new Error("SHOPIFY_TOKEN_REFRESH_FAILED");
+  }
+
+  const issuedAt = Date.now();
+  const accessTokenExpiresAt =
+    typeof tokenJson.expires_in === "number"
+      ? new Date(issuedAt + tokenJson.expires_in * 1000).toISOString()
+      : null;
+
+  const refreshTokenExpiresAt =
+    typeof tokenJson.refresh_token_expires_in === "number"
+      ? new Date(issuedAt + tokenJson.refresh_token_expires_in * 1000).toISOString()
+      : null;
+
+  return {
+    accessToken: tokenJson.access_token,
+    refreshToken: tokenJson.refresh_token || refreshToken,
+    accessTokenExpiresAt,
+    refreshTokenExpiresAt,
+    scope: typeof tokenJson.scope === "string" ? tokenJson.scope : "",
+  };
 }
 
 export async function POST(req: Request) {
@@ -83,8 +164,8 @@ export async function POST(req: Request) {
       );
     }
 
-    const shopData = shopDoc.data() as { accessToken?: string };
-    const accessToken = shopData.accessToken;
+    const shopData = shopDoc.data() as ShopAuthData;
+    let accessToken = shopData.accessToken;
 
     if (!accessToken) {
       return NextResponse.json(
@@ -94,6 +175,52 @@ export async function POST(req: Request) {
         },
         { status: 401 }
       );
+    }
+
+    if (shouldRefreshAccessToken(shopData.accessTokenExpiresAt)) {
+      if (!shopData.refreshToken) {
+        return NextResponse.json(
+          {
+            success: false,
+            error:
+              "Shopify認証の更新に必要な情報が見つかりません。アプリを開き直して再認証してください。",
+          },
+          { status: 401 }
+        );
+      }
+
+      try {
+        const refreshedToken = await refreshShopifyAccessToken(
+          shop,
+          shopData.refreshToken
+        );
+
+        accessToken = refreshedToken.accessToken;
+
+        await db.collection("shops").doc(shop).set(
+          {
+            accessToken: refreshedToken.accessToken,
+            refreshToken: refreshedToken.refreshToken,
+            accessTokenExpiresAt: refreshedToken.accessTokenExpiresAt,
+            refreshTokenExpiresAt: refreshedToken.refreshTokenExpiresAt,
+            tokenType: "expiring_offline",
+            scope: refreshedToken.scope || shopData.scope || "",
+            tokenRefreshedAt: new Date().toISOString(),
+          },
+          { merge: true }
+        );
+      } catch (error) {
+        console.error("Shopify token refresh error:", error);
+
+        return NextResponse.json(
+          {
+            success: false,
+            error:
+              "Shopify認証の更新に失敗しました。アプリを開き直して再認証してください。",
+          },
+          { status: 401 }
+        );
+      }
     }
 
     const existingCustomersSnapshot = await db
