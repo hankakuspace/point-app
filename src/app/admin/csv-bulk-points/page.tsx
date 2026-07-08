@@ -201,9 +201,9 @@ export default function CsvBulkPointsPage() {
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "minmax(0, 1fr) minmax(260px, 0.7fr) auto",
+                  gridTemplateColumns: "minmax(0, 1fr) minmax(360px, 0.9fr)",
                   gap: "12px",
-                  alignItems: "end",
+                  alignItems: "start",
                 }}
               >
                 <div>
@@ -231,23 +231,43 @@ export default function CsvBulkPointsPage() {
                   </Text>
                 </div>
 
-                <TextField
-                  label="付与理由（CSVに reason がない場合）"
-                  value={csvReason}
-                  onChange={(value) => setCsvReason(value)}
-                  autoComplete="off"
-                  placeholder="例：キャンペーン付与"
-                  helpText="CSV内に reason がある場合は、CSVの内容が優先されます。"
-                />
+                <div>
+                  <Text as="p" variant="bodySm" fontWeight="medium">
+                    付与理由（CSVに reason がない場合）
+                  </Text>
 
-                <Button
-                  variant="primary"
-                  onClick={handleCsvBulkAdd}
-                  loading={csvLoading}
-                  disabled={!csvFile}
-                >
-                  CSV一括付与
-                </Button>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "minmax(0, 1fr) auto",
+                      gap: "12px",
+                      alignItems: "center",
+                      marginTop: "6px",
+                    }}
+                  >
+                    <TextField
+                      label="付与理由（CSVに reason がない場合）"
+                      labelHidden
+                      value={csvReason}
+                      onChange={(value) => setCsvReason(value)}
+                      autoComplete="off"
+                      placeholder="例：キャンペーン付与"
+                    />
+
+                    <Button
+                      variant="primary"
+                      onClick={handleCsvBulkAdd}
+                      loading={csvLoading}
+                      disabled={!csvFile}
+                    >
+                      CSVアップロード
+                    </Button>
+                  </div>
+
+                  <Text as="p" variant="bodySm" tone="subdued">
+                    CSV内に reason がある場合は、CSVの内容が優先されます。
+                  </Text>
+                </div>
               </div>
             </div>
           </Card>
