@@ -97,16 +97,18 @@ export async function POST(req: Request) {
     const retryFailed =
       typeof body.retryFailed === "boolean" ? body.retryFailed : false;
 
-    const targetShop =
+    const requestedShop =
       typeof body.shop === "string" && body.shop.trim()
         ? body.shop.trim()
         : "";
 
-    const session = await requireShopifySessionToken(req, targetShop);
+    const session = await requireShopifySessionToken(req, requestedShop);
 
     if (!session.ok) {
       return session.response;
     }
+
+    const targetShop = session.shop;
 
     const expireMinutes =
       typeof body.expireMinutes === "number" &&
@@ -122,6 +124,7 @@ export async function POST(req: Request) {
 
     const snapshot = await db
       .collection("point_redemptions")
+      .where("shop", "==", targetShop)
       .where("status", "==", retryFailed ? "expired" : "issued")
       .get();
 
@@ -129,7 +132,7 @@ export async function POST(req: Request) {
       ? snapshot.docs.filter((doc) => {
           const data = doc.data();
 
-          if (targetShop && data.shop !== targetShop) {
+          if (data.shop !== targetShop) {
             return false;
           }
 
@@ -138,7 +141,7 @@ export async function POST(req: Request) {
       : snapshot.docs.filter((doc) => {
           const data = doc.data();
 
-          if (targetShop && data.shop !== targetShop) {
+          if (data.shop !== targetShop) {
             return false;
           }
 
@@ -177,7 +180,8 @@ export async function POST(req: Request) {
     for (const doc of expiredTargets) {
       const data = doc.data();
       const discountCode = String(data.discountCode || doc.id);
-      const shop = typeof data.shop === "string" ? data.shop : null;
+      // Never derive the Shopify credential scope from a stored/requested shop.
+      const shop = targetShop;
       const discountNodeId =
         typeof data.discountNodeId === "string"
           ? data.discountNodeId
@@ -197,7 +201,7 @@ export async function POST(req: Request) {
           discountNodeId:
             (deactivateResult as any).discountNodeId || discountNodeId || null,
           expireError: deactivateResult.error || null,
-        });
+        }, { lastUpdateTime: doc.updateTime });
 
         results.push({
           id: doc.id,
@@ -205,14 +209,23 @@ export async function POST(req: Request) {
           error: deactivateResult.error,
         });
       } catch (error) {
-        const errorMessage = (error as Error).message;
+        // A concurrent update must not be overwritten by the failure-recording path.
+        // Shopify calls stay outside Firestore retries; external and local writes
+        // cannot be made atomic without a separate recovery protocol.
+        if ((error as { code?: number }).code === 9 ||
+            (error as { code?: number }).code === 5) {
+          results.push({ id: doc.id, shopifyDeactivated: false,
+            error: "Redemption changed during expiration; retry required" });
+          continue;
+        }
+        const errorMessage = "Failed to expire point redemption";
 
         await doc.ref.update({
           ...(retryFailed ? {} : { status: "expired", expiredAt }),
           updatedAt: expiredAt,
           shopifyDeactivated: false,
           expireError: errorMessage,
-        });
+        }, { lastUpdateTime: doc.updateTime });
 
         results.push({
           id: doc.id,
@@ -230,8 +243,8 @@ export async function POST(req: Request) {
       expiredIds: expiredTargets.map((doc) => doc.id),
       results,
     });
-  } catch (error) {
-    console.error("Failed to expire point redemptions:", error);
+  } catch {
+    console.error("Failed to expire point redemptions");
 
     return NextResponse.json(
       {

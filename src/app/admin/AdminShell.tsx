@@ -162,6 +162,25 @@ export default function AdminShell({
   useEffect(() => {
     let cancelled = false;
 
+    const startOAuth = (shop: string) => {
+      if (cancelled) return;
+      const authPath = `/api/auth?shop=${encodeURIComponent(shop)}`;
+      try {
+        if (window.self === window.top) {
+          window.location.href = authPath;
+        } else if (typeof window.open === "function") {
+          // CDN App Bridge Navigation API uses the standard open() interface.
+          // An absolute URL keeps OAuth on this app's origin when leaving admin.
+          window.open(new URL(authPath, window.location.origin).href, "_top");
+        } else {
+          console.error("OAuth top-level navigation unavailable");
+        }
+      } catch {
+        // Never fall back to starting OAuth inside the iframe.
+        console.error("OAuth top-level navigation failed");
+      }
+    };
+
     const ensureOAuth = async () => {
       const shop = getShopFromAdminContext();
 
@@ -194,11 +213,11 @@ export default function AdminShell({
         }
 
         if (!cancelled) {
-          window.location.href = `/api/auth?shop=${encodeURIComponent(shop)}`;
+          startOAuth(shop);
         }
       } catch (error) {
         if (!cancelled) {
-          window.location.href = `/api/auth?shop=${encodeURIComponent(shop)}`;
+          startOAuth(shop);
         }
       }
     };

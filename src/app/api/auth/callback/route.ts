@@ -2,22 +2,41 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/firebase";
 
+import { verifyShopifyOAuthHmac, validateShopDomain, verifyOAuthState, OAUTH_COOKIE_NAME, OAUTH_COOKIE_OPTIONS } from "@/lib/shopify";
+
 export const runtime = "nodejs";
 
 export async function GET(req: NextRequest) {
+  const clearState = (response: NextResponse) => {
+    response.cookies.set(OAUTH_COOKIE_NAME, "", { ...OAUTH_COOKIE_OPTIONS, maxAge: 0 });
+    return response;
+  };
   try {
     const { searchParams } = new URL(req.url);
-    const shop = searchParams.get("shop");
+    const shop = validateShopDomain(searchParams.get("shop") || "");
     const code = searchParams.get("code");
     const host = searchParams.get("host");
 
-    if (!shop || !code) {
-      return new NextResponse("Missing shop or code", { status: 400 });
+    const state = searchParams.get("state") || "";
+    // Reject ambiguous parameters rather than signing one value and using another.
+    const duplicate = [...searchParams.keys()].some((key) => searchParams.getAll(key).length !== 1);
+    let validHmac = false;
+    if (shop && code && !duplicate &&
+        verifyOAuthState(req.cookies.get(OAUTH_COOKIE_NAME)?.value || "", state, shop)) {
+      try {
+        validHmac = verifyShopifyOAuthHmac(searchParams);
+      } catch {
+        validHmac = false;
+      }
+    }
+    if (!validHmac) {
+      return clearState(new NextResponse("Invalid OAuth callback", { status: 400 }));
     }
 
     // ✅ ① アクセストークン取得
     const tokenRes = await fetch(`https://${shop}/admin/oauth/access_token`, {
       method: "POST",
+      redirect: "error",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         client_id: process.env.SHOPIFY_API_KEY,
@@ -28,12 +47,11 @@ export async function GET(req: NextRequest) {
     });
 
     if (!tokenRes.ok) {
-      const rawText = await tokenRes.text();
-      console.error("❌ Token exchange failed:", tokenRes.status, rawText);
-      return new NextResponse(
+      console.error("Token exchange failed:", tokenRes.status);
+      return clearState(new NextResponse(
         `Failed to exchange token: ${tokenRes.status}`,
         { status: 500 }
-      );
+      ));
     }
 
     const tokenJson = await tokenRes.json();
@@ -54,7 +72,6 @@ export async function GET(req: NextRequest) {
       ? new Date(issuedAt + refreshTokenExpiresIn * 1000).toISOString()
       : null;
     const scope = typeof tokenJson.scope === "string" ? tokenJson.scope : "";
-    console.log("✅ Access token retrieved for", shop);
 
     // ✅ ② Firestore 保存（try/catch 保護付き）
     try {
@@ -70,18 +87,24 @@ export async function GET(req: NextRequest) {
         },
         { merge: true }
       );
-      console.log(`✅ Firestore updated for ${shop}`);
-    } catch (e) {
-      console.error("❌ Firestore update failed:", e);
+    } catch {
+      console.error("Firestore update failed");
+      // The authorization code has already been exchanged: restart OAuth rather
+      // than redirecting as if persistence succeeded or replaying the same code.
+      return clearState(new NextResponse(
+        "Failed to save Shopify authentication. Reopen the app from Shopify to restart authentication.",
+        { status: 500 }
+      ));
     }
 
     // ✅ ③ orders/paid Webhook は shopify.app.toml の app-specific subscription で管理
     // ✅ ④ リダイレクト
-    return NextResponse.redirect(
-      `${process.env.SHOPIFY_APP_URL}/admin/customers?host=${host}&shop=${shop}`
-    );
-  } catch (err) {
-    console.error("❌ Auth callback error:", err);
-    return new NextResponse("Auth callback failed", { status: 500 });
+    const returnUrl = new URL("/admin/customers", process.env.SHOPIFY_APP_URL!);
+    returnUrl.searchParams.set("host", host || "");
+    returnUrl.searchParams.set("shop", shop);
+    return clearState(NextResponse.redirect(returnUrl));
+  } catch {
+    console.error("Auth callback error");
+    return clearState(new NextResponse("Auth callback failed", { status: 500 }));
   }
 }

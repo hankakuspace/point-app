@@ -99,8 +99,8 @@ export default function LogsPage() {
       const data = await res.json();
       setLogs(data.logs || []);
       setPage(0);
-    } catch (error) {
-      console.error('Error fetching logs:', error);
+    } catch {
+      console.error('Error fetching logs');
     } finally {
       setLoading(false);
     }
@@ -124,8 +124,8 @@ export default function LogsPage() {
       const res = await fetch(query ? `/api/logs?${query}` : '/api/logs');
       const data = await res.json();
       setLogs(data.logs || []);
-    } catch (error) {
-      console.error('Error resetting logs:', error);
+    } catch {
+      console.error('Error resetting logs');
     } finally {
       setLoading(false);
     }
@@ -201,8 +201,8 @@ export default function LogsPage() {
           setCopiedKey((currentKey) => currentKey === key ? null : currentKey);
         }, 1200);
       }
-    } catch (error) {
-      console.error('Failed to copy text:', error);
+    } catch {
+      console.error('Failed to copy text');
     }
   };
 
@@ -214,9 +214,21 @@ export default function LogsPage() {
     }
     setBulkLoading(true);
     try {
+      const shopifyWindow = window as typeof window & {
+        shopify?: { idToken?: () => Promise<string> };
+      };
+      let token = '';
+      for (let attempt = 0; attempt < 20; attempt += 1) {
+        if (typeof shopifyWindow.shopify?.idToken === 'function') {
+          token = await shopifyWindow.shopify.idToken();
+          if (token) break;
+        }
+        await new Promise((resolve) => window.setTimeout(resolve, 100));
+      }
+      if (!token) throw new Error('Session token unavailable');
       const res = await fetch('/api/points/bulk-add', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           customerId: bulkCustomerId.trim() || null,
           points: Number(bulkPoints),
@@ -233,8 +245,8 @@ export default function LogsPage() {
       } else {
         alert('エラー: ' + (data.error || '不明なエラー'));
       }
-    } catch (e) {
-      console.error(e);
+    } catch {
+      console.error('Bulk points request failed');
     } finally {
       setBulkLoading(false);
     }

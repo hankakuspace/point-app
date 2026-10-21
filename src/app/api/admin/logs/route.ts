@@ -27,23 +27,18 @@ function getTimestampValue(value: any) {
 
 export async function GET(req: NextRequest) {
   try {
-    const shop = req.nextUrl.searchParams.get("shop") || "";
-    const session = await requireShopifySessionToken(req, shop);
+    const requestedShop = req.nextUrl.searchParams.get("shop") || "";
+    const session = await requireShopifySessionToken(req, requestedShop);
 
     if (!session.ok) {
       return session.response;
     }
 
-    const snapshot = shop
-      ? await db
-          .collection("point_logs")
-          .where("shop", "==", shop)
-          .get()
-      : await db
-          .collection("point_logs")
-          .orderBy("timestamp", "desc")
-          .limit(50)
-          .get();
+    const shop = session.shop;
+    const snapshot = await db
+      .collection("point_logs")
+      .where("shop", "==", shop)
+      .get();
 
     const logs = snapshot.docs
       .map((doc) => ({
@@ -54,8 +49,8 @@ export async function GET(req: NextRequest) {
       .slice(0, 50);
 
     return NextResponse.json(logs);
-  } catch (error) {
-    console.error("Error fetching logs:", error);
+  } catch {
+    console.error("Error fetching logs");
     return NextResponse.json({ error: "Failed to fetch logs" }, { status: 500 });
   }
 }
