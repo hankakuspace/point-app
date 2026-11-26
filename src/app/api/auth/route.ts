@@ -1,3 +1,4 @@
+import { DEV07_OAUTH_SHOP, getDev07OAuthGeneration } from "@/lib/dev07OAuth";
 // src/app/api/auth/route.ts
 import { NextRequest, NextResponse } from "next/server";
 
@@ -28,7 +29,8 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const { state, cookie } = createOAuthState(shop);
+    const generation = shop === DEV07_OAUTH_SHOP ? await getDev07OAuthGeneration((await import("@/lib/firebase")).db) : undefined;
+    const { state, cookie } = createOAuthState(shop, generation);
     const redirectUri = `${SHOPIFY_APP_URL}/api/auth/callback`;
     const authUrl = `https://${shop}/admin/oauth/authorize?client_id=${SHOPIFY_API_KEY}&scope=${SCOPES.join(
       ","

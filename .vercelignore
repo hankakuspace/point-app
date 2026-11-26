@@ -30,3 +30,7 @@ package-lock 2.json
 Environment
 extensions
 extensions/**
+
+# CLI workspace and local spreadsheets must never be uploaded
+.shopify
+*.xlsx
