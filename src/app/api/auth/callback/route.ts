@@ -1,3 +1,5 @@
+import { DEV07_OAUTH_SHOP, exchangeDev07OAuth, getDev07OAuthGeneration } from "@/lib/dev07OAuth";
+import { assertLegacyTokenWriteAllowed, LegacyTokenWriteBlocked } from "@/lib/legacyTokenWriteGuard";
 // src/app/api/auth/callback/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/firebase";
@@ -33,6 +35,15 @@ export async function GET(req: NextRequest) {
       return clearState(new NextResponse("Invalid OAuth callback", { status: 400 }));
     }
 
+    assertLegacyTokenWriteAllowed(shop);
+
+    if (shop === DEV07_OAUTH_SHOP) {
+      const generation = await getDev07OAuthGeneration(db);
+      if (!verifyOAuthState(req.cookies.get(OAUTH_COOKIE_NAME)?.value || "", state, shop, generation)) {
+        return clearState(new NextResponse("Invalid OAuth callback", { status: 400 }));
+      }
+      await exchangeDev07OAuth(db, shop, code!, generation);
+    } else {
     // ✅ ① アクセストークン取得
     const tokenRes = await fetch(`https://${shop}/admin/oauth/access_token`, {
       method: "POST",
@@ -75,6 +86,7 @@ export async function GET(req: NextRequest) {
 
     // ✅ ② Firestore 保存（try/catch 保護付き）
     try {
+      assertLegacyTokenWriteAllowed(shop);
       await db.collection("shops").doc(shop).set(
         {
           accessToken,
@@ -97,13 +109,18 @@ export async function GET(req: NextRequest) {
       ));
     }
 
+    }
+
     // ✅ ③ orders/paid Webhook は shopify.app.toml の app-specific subscription で管理
     // ✅ ④ リダイレクト
     const returnUrl = new URL("/admin/customers", process.env.SHOPIFY_APP_URL!);
     returnUrl.searchParams.set("host", host || "");
     returnUrl.searchParams.set("shop", shop);
     return clearState(NextResponse.redirect(returnUrl));
-  } catch {
+  } catch (error) {
+    if (error instanceof LegacyTokenWriteBlocked) {
+      return clearState(new NextResponse("Temporarily unavailable", { status: 503 }));
+    }
     console.error("Auth callback error");
     return clearState(new NextResponse("Auth callback failed", { status: 500 }));
   }

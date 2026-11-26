@@ -1,6 +1,8 @@
 // src/app/api/customer-account/points/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/firebaseAdmin";
+import { observeCustomerBalanceIdentity } from "@/lib/customerBalanceAuthObservation";
+import { recordCustomerBalanceAuth } from "@/lib/customerBalanceAuthMetrics";
 
 export const runtime = "nodejs";
 
@@ -30,6 +32,7 @@ export async function OPTIONS() {
 }
 
 export async function GET(req: NextRequest) {
+  recordCustomerBalanceAuth(req.headers.get("authorization"));
   try {
     const customerIdParam = req.nextUrl.searchParams.get("customerId") || "";
     const customerId = getNumericCustomerId(customerIdParam);
@@ -46,6 +49,9 @@ export async function GET(req: NextRequest) {
 
     const customerDoc = await db.collection("customers").doc(customerId).get();
 
+    const customerData = customerDoc.exists ? customerDoc.data() || {} : {};
+    await observeCustomerBalanceIdentity(req.headers.get("authorization"), customerId, customerDoc.exists, customerData.shop);
+
     if (!customerDoc.exists) {
       return jsonResponse({
         success: true,
@@ -55,7 +61,6 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    const customerData = customerDoc.data() || {};
     const points =
       typeof customerData.points === "number" && Number.isFinite(customerData.points)
         ? customerData.points
@@ -68,7 +73,7 @@ export async function GET(req: NextRequest) {
       found: true,
     });
   } catch (error) {
-    console.error("Failed to fetch customer account points:", error);
+    console.error("Failed to fetch customer account points");
 
     return jsonResponse(
       {

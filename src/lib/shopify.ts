@@ -1,3 +1,4 @@
+import { assertLegacyRefreshAllowed } from "@/lib/legacyTokenWriteGuard";
 // src/lib/shopify.ts
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { shopifyApi, LATEST_API_VERSION } from "@shopify/shopify-api";
@@ -22,17 +23,18 @@ export const OAUTH_COOKIE_OPTIONS = {
   maxAge: 600,
 };
 
-export function createOAuthState(shop: string) {
+export function createOAuthState(shop: string, authGeneration?: number) {
   const state = randomBytes(32).toString("hex");
   const data = Buffer.from(JSON.stringify({
     state, shop, expiresAt: Date.now() + OAUTH_COOKIE_OPTIONS.maxAge * 1000,
+    ...(authGeneration === undefined ? {} : { authGeneration }),
   })).toString("base64url");
   const signature = createHmac("sha256", process.env.SHOPIFY_API_SECRET!)
     .update(data).digest("hex");
   return { state, cookie: `${data}.${signature}` };
 }
 
-export function verifyOAuthState(cookie: string, state: string, shop: string) {
+export function verifyOAuthState(cookie: string, state: string, shop: string, authGeneration?: number) {
   try {
     const parts = cookie.split(".");
     if (parts.length !== 2 || !/^[a-f0-9]{64}$/.test(parts[1])) return false;
@@ -41,7 +43,7 @@ export function verifyOAuthState(cookie: string, state: string, shop: string) {
     if (!timingSafeEqual(signature, Buffer.from(parts[1], "hex"))) return false;
     const saved = JSON.parse(Buffer.from(parts[0], "base64url").toString());
     return /^[a-f0-9]{64}$/.test(state) && saved.state === state &&
-      saved.shop === shop && Number.isFinite(saved.expiresAt) &&
+      saved.shop === shop && (authGeneration === undefined || saved.authGeneration === authGeneration) && Number.isFinite(saved.expiresAt) &&
       saved.expiresAt > Date.now();
   } catch {
     return false;
@@ -117,6 +119,43 @@ export const shopify = shopifyApi({
   sessionStorage: new SimpleMemorySessionStorage(),
 });
 
+// Preserve a privately retained exchange result across requests in this module's
+// process lifetime. This is not durable storage or a cross-worker lock.
+const tokenManagerCache = new WeakMap<object, {
+  clientId: string | undefined;
+  clientSecret: string | undefined;
+  manager: import("./shopifyTokenManager").ShopifyTokenManager;
+}>();
+
+/** All callers must pass the shop established by their authentication layer. */
+export async function getShopifyTokenManager() {
+  const { db } = await import("@/lib/firebaseAdmin");
+  const { ShopifyTokenManager } = await import("./shopifyTokenManager");
+  const clientId = process.env.SHOPIFY_API_KEY;
+  const clientSecret = process.env.SHOPIFY_API_SECRET;
+  const cached = tokenManagerCache.get(db);
+  if (cached && cached.clientId === clientId && cached.clientSecret === clientSecret) {
+    return cached.manager;
+  }
+  // No await between lookup and insertion: concurrent first calls share one
+  // instance. Freeze its app context rather than adopting later env changes.
+  const manager = new ShopifyTokenManager(db, {
+    clientId: () => clientId,
+    clientSecret: () => clientSecret,
+  });
+  tokenManagerCache.set(db, { clientId, clientSecret, manager });
+  return manager;
+}
+
+// Only the two recovered shops enter the v3 path in this limited release.
+export function isManagedTokenShop(shop: string): boolean {
+  return shop === "ruhra-store.myshopify.com" || shop === "pointman-dev-07-plus.myshopify.com";
+}
+export async function getManagedShopifyAccessToken(shop: string) {
+  if (!isManagedTokenShop(shop)) throw new Error("MANAGED_TOKEN_SHOP_REJECTED");
+  return (await getShopifyTokenManager()).getAccessToken(shop);
+}
+
 /**
  * ✅ Shopify Admin GraphQL API 呼び出し
  * Firestore の shops/{shop} に保存済みの accessToken を使用する。
@@ -154,6 +193,7 @@ async function refreshShopifyOfflineAccessToken(
   const validatedShop = validateShopDomain(shop);
   if (!validatedShop) throw new Error("Invalid shop host");
 
+  assertLegacyRefreshAllowed(validatedShop);
   const response = await fetch(`https://${validatedShop}/admin/oauth/access_token`, {
     redirect: "error",
     method: "POST",
@@ -209,6 +249,11 @@ async function getShopifyAdminAccessToken(shop?: string) {
     targetShop = shopDoc.id;
   }
 
+  // Use the actual resolved document ID, including legacy callers without shop.
+  if (targetShop && isManagedTokenShop(targetShop)) {
+    return { targetShop, accessToken: await getManagedShopifyAccessToken(targetShop) };
+  }
+
   const shopData = shopDoc.data() as StoredShopToken | undefined;
 
   if (!targetShop || !shopData?.accessToken) {
@@ -237,6 +282,7 @@ async function getShopifyAdminAccessToken(shop?: string) {
     const nextAccessToken = refreshed.access_token;
     const nextRefreshToken = refreshed.refresh_token || shopData.refreshToken;
 
+    assertLegacyRefreshAllowed(targetShop);
     await db.collection("shops").doc(targetShop).set(
       {
         accessToken: nextAccessToken,

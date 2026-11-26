@@ -1,3 +1,5 @@
+import { isManagedTokenShop, getManagedShopifyAccessToken } from "@/lib/shopify";
+import { assertLegacyRefreshAllowed } from "@/lib/legacyTokenWriteGuard";
 // src/app/api/admin/customers/sync-shopify/route.ts
 import { NextResponse } from "next/server";
 import { FieldValue } from "firebase-admin/firestore";
@@ -91,6 +93,7 @@ function shouldRefreshAccessToken(expiresAt?: string | null) {
 }
 
 async function refreshShopifyAccessToken(shop: string, refreshToken: string) {
+  assertLegacyRefreshAllowed(shop);
   const tokenRes = await fetch(`https://${shop}/admin/oauth/access_token`, {
     method: "POST",
     headers: {
@@ -140,14 +143,15 @@ async function refreshShopifyAccessToken(shop: string, refreshToken: string) {
 export async function POST(req: Request) {
   try {
     const body = await req.json().catch(() => ({}));
-    const shop = body.shop;
+    const requestedShop = body.shop;
 
-    const session = await requireShopifySessionToken(req, shop);
+    const session = await requireShopifySessionToken(req, requestedShop);
 
     if (!session.ok) {
       return session.response;
     }
 
+    const shop = session.shop;
     if (!shop || typeof shop !== "string") {
       return NextResponse.json(
         { success: false, error: "Missing shop" },
@@ -164,8 +168,17 @@ export async function POST(req: Request) {
       );
     }
 
+    const managed = isManagedTokenShop(shop);
+    let managedAccessToken: string | undefined;
+    if (managed) {
+      try { managedAccessToken = await getManagedShopifyAccessToken(shop); }
+      catch {
+        return NextResponse.json({ success: false,
+          error: "Shopify認証の更新に失敗しました。アプリを開き直して再認証してください。" }, { status: 401 });
+      }
+    }
     const shopData = shopDoc.data() as ShopAuthData;
-    let accessToken = shopData.accessToken;
+    let accessToken = managed ? managedAccessToken : shopData.accessToken;
 
     if (!accessToken) {
       return NextResponse.json(
@@ -177,7 +190,7 @@ export async function POST(req: Request) {
       );
     }
 
-    if (shouldRefreshAccessToken(shopData.accessTokenExpiresAt)) {
+    if (!managed && shouldRefreshAccessToken(shopData.accessTokenExpiresAt)) {
       if (!shopData.refreshToken) {
         return NextResponse.json(
           {
@@ -197,6 +210,7 @@ export async function POST(req: Request) {
 
         accessToken = refreshedToken.accessToken;
 
+        assertLegacyRefreshAllowed(shop);
         await db.collection("shops").doc(shop).set(
           {
             accessToken: refreshedToken.accessToken,
